@@ -17,10 +17,15 @@ public:
         double steering_curve = 1.0;
     };
     
-    // Apply scaling and dead zones to normalized command
+    // Apply scaling and dead zones to normalized command (default factors)
+    static NormalizedCommand apply_scaling(const NormalizedCommand& cmd) {
+        return apply_scaling(cmd, ScaleFactors{});
+    }
+    
+    // Apply scaling and dead zones to normalized command (custom factors)
     static NormalizedCommand apply_scaling(
         const NormalizedCommand& cmd,
-        const ScaleFactors& factors = ScaleFactors{}
+        const ScaleFactors& factors
     ) {
         NormalizedCommand output = cmd;
         

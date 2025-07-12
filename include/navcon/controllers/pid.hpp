@@ -44,14 +44,25 @@ public:
         status_.heading_error = heading_error;
         status_.goal_reached = false;
         
-        // PID for angular control
-        angular_integral_ += heading_error * dt;
-        double angular_derivative = (heading_error - last_heading_error_) / dt;
-        last_heading_error_ = heading_error;
+        // PID for angular control with stronger gains
+        double angular_control = 0.0;
+        const double heading_deadband = 0.1; // 0.1 radians (~6 degrees) deadband
         
-        double angular_control = config_.kp_angular * heading_error +
-                               config_.ki_angular * angular_integral_ +
-                               config_.kd_angular * angular_derivative;
+        if (std::abs(heading_error) > heading_deadband) {
+            angular_integral_ += heading_error * dt;
+            double angular_derivative = (heading_error - last_heading_error_) / dt;
+            last_heading_error_ = heading_error;
+            
+            // Use much stronger proportional gain for angular control
+            angular_control = (config_.kp_angular * 3.0) * heading_error +
+                             config_.ki_angular * angular_integral_ +
+                             config_.kd_angular * angular_derivative;
+        } else {
+            // Within deadband - stop turning and reset integral
+            angular_integral_ = 0.0;
+            last_heading_error_ = 0.0;
+            angular_control = 0.0;
+        }
         
         // PID for linear control
         linear_integral_ += distance_error * dt;
@@ -62,9 +73,14 @@ public:
                               config_.ki_linear * linear_integral_ +
                               config_.kd_linear * linear_derivative;
         
-        // Reduce linear speed when turning
-        double turn_reduction = 1.0 - std::min(std::abs(heading_error) / M_PI, 0.8);
-        linear_control *= turn_reduction;
+        // Reduce linear speed when turning - very aggressive reduction  
+        double turn_reduction = 1.0 - std::min(std::abs(heading_error) / (M_PI/6), 0.95); // Start reducing at 30°, max 95% reduction
+        linear_control *= std::max(turn_reduction, 0.05); // Keep minimum 5% speed
+        
+        // If heading error is large, prioritize turning over moving forward
+        if (std::abs(heading_error) > M_PI/3) { // 60 degrees
+            linear_control *= 0.1; // Reduce to 10% speed when heading error is large
+        }
         
         // Apply to command based on output type
         apply_control_to_command(cmd, linear_control, angular_control, constraints);
@@ -132,6 +148,23 @@ private:
         } else {
             cmd.steering_angle = 0.0;
         }
+    }
+    
+    void apply_control_to_command(
+        DifferentialCommand& cmd,
+        double linear_control,
+        double angular_control,
+        const RobotConstraints& constraints
+    ) {
+        // Convert to wheel speeds using differential drive kinematics
+        double linear = std::clamp(linear_control,
+            constraints.min_linear_velocity, constraints.max_linear_velocity);
+        double angular = std::clamp(angular_control,
+            -constraints.max_angular_velocity, constraints.max_angular_velocity);
+        
+        double half_track = constraints.track_width / 2.0;
+        cmd.left_speed = linear - (angular * half_track);
+        cmd.right_speed = linear + (angular * half_track);
     }
 };
 

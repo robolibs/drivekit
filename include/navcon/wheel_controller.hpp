@@ -3,6 +3,7 @@
 #include "navcon/robot_config.hpp"
 #include "navcon/types.hpp"
 #include <unordered_map>
+#include <map>
 #include <cmath>
 
 namespace navcon {

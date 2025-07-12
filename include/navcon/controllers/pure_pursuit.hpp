@@ -24,7 +24,7 @@ public:
     ) override {
         OutputCommand cmd;
         
-        // Get target point (either from path or direct goal)
+        // Get target point using improved lookahead algorithm
         Point target_point;
         bool has_path = !path_.waypoints.empty();
         
@@ -59,11 +59,15 @@ public:
         double dx_local = cos_theta * dx_global + sin_theta * dy_global;
         double dy_local = -sin_theta * dx_global + cos_theta * dy_global;
         
-        // Calculate curvature using pure pursuit formula
-        double lookahead_distance = std::sqrt(dx_local * dx_local + dy_local * dy_local);
-        lookahead_distance = std::max(lookahead_distance, config_.lookahead_distance);
+        // Calculate curvature using aggressive pure pursuit formula for sharp turning
+        double lookahead_distance = config_.lookahead_distance;
         
+        // Much more aggressive curvature calculation - use shorter effective distance for sharper turns
         double curvature = 2.0 * dy_local / (lookahead_distance * lookahead_distance);
+        
+        // Amplify curvature for more aggressive turning
+        double curvature_multiplier = 2.5; // Make turning much more aggressive
+        curvature *= curvature_multiplier;
         
         // Update status
         status_.distance_to_goal = current_state.pose.point.distance_to(goal.target_pose.point);
@@ -86,34 +90,52 @@ private:
     std::optional<Point> find_lookahead_point(const Pose& current_pose) {
         if (path_.waypoints.empty()) return std::nullopt;
         
-        // Find the closest point on the path ahead of the robot
-        double min_distance = std::numeric_limits<double>::max();
-        size_t closest_idx = path_index_;
-        
-        // Search forward from current index
-        for (size_t i = path_index_; i < path_.waypoints.size(); ++i) {
-            double dist = current_pose.point.distance_to(path_.waypoints[i].point);
-            if (dist < min_distance) {
-                min_distance = dist;
-                closest_idx = i;
+        // FIXED waypoint progression: advance when close OR when we've passed the waypoint
+        // This prevents the robot from getting stuck targeting the first waypoint
+        while (path_index_ < path_.waypoints.size() - 1) {
+            Point current_waypoint = path_.waypoints[path_index_].point;
+            Point next_waypoint = path_.waypoints[path_index_ + 1].point;
+            
+            double dist_to_current = current_pose.point.distance_to(current_waypoint);
+            
+            // Check if we've passed the waypoint by looking at the dot product
+            double dx_to_current = current_waypoint.x - current_pose.point.x;
+            double dy_to_current = current_waypoint.y - current_pose.point.y;
+            double dx_to_next = next_waypoint.x - current_waypoint.x;
+            double dy_to_next = next_waypoint.y - current_waypoint.y;
+            
+            // If dot product is negative, we've passed the waypoint
+            double dot_product = dx_to_current * dx_to_next + dy_to_current * dy_to_next;
+            
+            // Advance if: close to waypoint OR passed it OR too far away (stuck)
+            if (dist_to_current < 2.0 || dot_product < 0 || dist_to_current > 15.0) {
+                path_index_++;
+            } else {
+                break;
             }
         }
         
-        // Update path index
-        path_index_ = closest_idx;
-        
-        // Find lookahead point
+        // Find lookahead point starting from current path index
         double accumulated_distance = 0.0;
-        Point last_point = path_.waypoints[path_index_].point;
+        Point start_point = path_.waypoints[path_index_].point;
         
-        for (size_t i = path_index_; i < path_.waypoints.size(); ++i) {
+        // Check if we can use the current waypoint directly (if it's far enough)
+        double dist_to_start = current_pose.point.distance_to(start_point);
+        if (dist_to_start >= config_.lookahead_distance * 0.8) {
+            return start_point; // Use current waypoint if it's at good lookahead distance
+        }
+        
+        // Otherwise, find interpolated lookahead point along path
+        Point last_point = start_point;
+        
+        for (size_t i = path_index_ + 1; i < path_.waypoints.size(); ++i) {
             Point current_point = path_.waypoints[i].point;
             double segment_length = last_point.distance_to(current_point);
             
             if (accumulated_distance + segment_length >= config_.lookahead_distance) {
                 // Interpolate point on this segment
                 double remaining = config_.lookahead_distance - accumulated_distance;
-                double t = remaining / segment_length;
+                double t = segment_length > 0 ? remaining / segment_length : 0.0;
                 
                 Point lookahead;
                 lookahead.x = last_point.x + t * (current_point.x - last_point.x);
@@ -125,11 +147,7 @@ private:
             last_point = current_point;
         }
         
-        // If we're near the end, return the last waypoint
-        if (path_index_ == path_.waypoints.size() - 1) {
-            return std::nullopt;
-        }
-        
+        // If we've reached the end of the path, return the last waypoint
         return path_.waypoints.back().point;
     }
     
@@ -139,13 +157,16 @@ private:
         const RobotConstraints& constraints,
         double current_speed
     ) {
-        // Set linear velocity (could be constant or adaptive)
+        // Maintain constant speed for more aggressive turning
         cmd.linear_velocity = constraints.max_linear_velocity;
         
-        // Angular velocity from curvature
+        // Much more aggressive angular velocity from curvature
         cmd.angular_velocity = curvature * cmd.linear_velocity;
+        
+        // Increase angular velocity limits for sharper turns
+        double aggressive_angular_limit = constraints.max_angular_velocity * 1.5; // 50% more aggressive
         cmd.angular_velocity = std::clamp(cmd.angular_velocity,
-            -constraints.max_angular_velocity, constraints.max_angular_velocity);
+            -aggressive_angular_limit, aggressive_angular_limit);
     }
     
     void apply_pure_pursuit_control(
@@ -176,6 +197,26 @@ private:
         // Normalized steering from curvature
         double max_curvature = 1.0 / constraints.min_turning_radius;
         cmd.steering = std::clamp(curvature / max_curvature, -1.0, 1.0);
+    }
+    
+    void apply_pure_pursuit_control(
+        DifferentialCommand& cmd,
+        double curvature,
+        const RobotConstraints& constraints,
+        double current_speed
+    ) {
+        // Set linear velocity
+        double linear_velocity = constraints.max_linear_velocity;
+        
+        // Angular velocity from curvature
+        double angular_velocity = curvature * linear_velocity;
+        angular_velocity = std::clamp(angular_velocity,
+            -constraints.max_angular_velocity, constraints.max_angular_velocity);
+        
+        // Convert to differential drive wheel speeds
+        double half_track = constraints.track_width / 2.0;
+        cmd.left_speed = linear_velocity - (angular_velocity * half_track);
+        cmd.right_speed = linear_velocity + (angular_velocity * half_track);
     }
 };
 
