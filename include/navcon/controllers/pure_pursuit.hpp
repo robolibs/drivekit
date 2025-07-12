@@ -7,22 +7,21 @@ namespace navcon {
 namespace controllers {
 
 // Pure Pursuit controller for smooth path following
-template<typename OutputCommand = VelocityCommand>
-class PurePursuitController : public Controller<RobotState, OutputCommand> {
+class PurePursuitController : public Controller {
 public:
-    using Base = Controller<RobotState, OutputCommand>;
+    using Base = Controller;
     using Base::config_;
     using Base::status_;
     using Base::path_;
     using Base::path_index_;
     
-    OutputCommand compute_control(
+    VelocityCommand compute_control(
         const RobotState& current_state,
         const Goal& goal,
         const RobotConstraints& constraints,
         double dt
     ) override {
-        OutputCommand cmd;
+        VelocityCommand cmd;
         
         // Get target point using improved lookahead algorithm
         Point target_point;
@@ -75,8 +74,17 @@ public:
         status_.goal_reached = false;
         status_.mode = "pure_pursuit";
         
-        // Apply control based on output type
-        apply_pure_pursuit_control(cmd, curvature, constraints, current_state.velocity.linear);
+        // Apply pure pursuit control for velocity command
+        // Maintain constant speed for more aggressive turning
+        cmd.linear_velocity = constraints.max_linear_velocity;
+        
+        // Much more aggressive angular velocity from curvature
+        cmd.angular_velocity = curvature * cmd.linear_velocity;
+        
+        // Increase angular velocity limits for sharper turns
+        double aggressive_angular_limit = constraints.max_angular_velocity * 1.5; // 50% more aggressive
+        cmd.angular_velocity = std::clamp(cmd.angular_velocity,
+            -aggressive_angular_limit, aggressive_angular_limit);
         
         cmd.valid = true;
         cmd.status_message = "Following path";
@@ -149,74 +157,6 @@ private:
         
         // If we've reached the end of the path, return the last waypoint
         return path_.waypoints.back().point;
-    }
-    
-    void apply_pure_pursuit_control(
-        VelocityCommand& cmd,
-        double curvature,
-        const RobotConstraints& constraints,
-        double current_speed
-    ) {
-        // Maintain constant speed for more aggressive turning
-        cmd.linear_velocity = constraints.max_linear_velocity;
-        
-        // Much more aggressive angular velocity from curvature
-        cmd.angular_velocity = curvature * cmd.linear_velocity;
-        
-        // Increase angular velocity limits for sharper turns
-        double aggressive_angular_limit = constraints.max_angular_velocity * 1.5; // 50% more aggressive
-        cmd.angular_velocity = std::clamp(cmd.angular_velocity,
-            -aggressive_angular_limit, aggressive_angular_limit);
-    }
-    
-    void apply_pure_pursuit_control(
-        AckermannCommand& cmd,
-        double curvature,
-        const RobotConstraints& constraints,
-        double current_speed
-    ) {
-        // Set speed
-        cmd.speed = constraints.max_linear_velocity;
-        
-        // Steering angle from curvature
-        // For Ackermann: tan(steering_angle) = curvature * wheelbase
-        cmd.steering_angle = std::atan(curvature * constraints.wheelbase);
-        cmd.steering_angle = std::clamp(cmd.steering_angle,
-            -constraints.max_steering_angle, constraints.max_steering_angle);
-    }
-    
-    void apply_pure_pursuit_control(
-        NormalizedCommand& cmd,
-        double curvature,
-        const RobotConstraints& constraints,
-        double current_speed
-    ) {
-        // Normalized throttle
-        cmd.throttle = 0.8; // 80% throttle for path following
-        
-        // Normalized steering from curvature
-        double max_curvature = 1.0 / constraints.min_turning_radius;
-        cmd.steering = std::clamp(curvature / max_curvature, -1.0, 1.0);
-    }
-    
-    void apply_pure_pursuit_control(
-        DifferentialCommand& cmd,
-        double curvature,
-        const RobotConstraints& constraints,
-        double current_speed
-    ) {
-        // Set linear velocity
-        double linear_velocity = constraints.max_linear_velocity;
-        
-        // Angular velocity from curvature
-        double angular_velocity = curvature * linear_velocity;
-        angular_velocity = std::clamp(angular_velocity,
-            -constraints.max_angular_velocity, constraints.max_angular_velocity);
-        
-        // Convert to differential drive wheel speeds
-        double half_track = constraints.track_width / 2.0;
-        cmd.left_speed = linear_velocity - (angular_velocity * half_track);
-        cmd.right_speed = linear_velocity + (angular_velocity * half_track);
     }
 };
 

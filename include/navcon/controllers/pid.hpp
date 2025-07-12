@@ -7,22 +7,21 @@ namespace navcon {
 namespace controllers {
 
 // PID controller for basic point-to-point navigation
-template<typename OutputCommand = VelocityCommand>
-class PIDController : public Controller<RobotState, OutputCommand> {
+class PIDController : public Controller {
 public:
-    using Base = Controller<RobotState, OutputCommand>;
+    using Base = Controller;
     using Base::config_;
     using Base::status_;
     
     PIDController() { reset(); }
     
-    OutputCommand compute_control(
+    VelocityCommand compute_control(
         const RobotState& current_state,
         const Goal& goal,
         const RobotConstraints& constraints,
         double dt
     ) override {
-        OutputCommand cmd;
+        VelocityCommand cmd;
         
         // Check if goal is reached
         if (this->is_goal_reached(current_state.pose, goal.target_pose)) {
@@ -82,8 +81,11 @@ public:
             linear_control *= 0.1; // Reduce to 10% speed when heading error is large
         }
         
-        // Apply to command based on output type
-        apply_control_to_command(cmd, linear_control, angular_control, constraints);
+        // Apply control to velocity command
+        cmd.linear_velocity = std::clamp(linear_control, 
+            constraints.min_linear_velocity, constraints.max_linear_velocity);
+        cmd.angular_velocity = std::clamp(angular_control,
+            -constraints.max_angular_velocity, constraints.max_angular_velocity);
         
         cmd.valid = true;
         cmd.status_message = "Tracking goal";
@@ -107,65 +109,6 @@ private:
     double angular_integral_ = 0.0;
     double last_distance_error_ = 0.0;
     double last_heading_error_ = 0.0;
-    
-    void apply_control_to_command(
-        VelocityCommand& cmd,
-        double linear_control,
-        double angular_control,
-        const RobotConstraints& constraints
-    ) {
-        cmd.linear_velocity = std::clamp(linear_control, 
-            constraints.min_linear_velocity, constraints.max_linear_velocity);
-        cmd.angular_velocity = std::clamp(angular_control,
-            -constraints.max_angular_velocity, constraints.max_angular_velocity);
-    }
-    
-    void apply_control_to_command(
-        NormalizedCommand& cmd,
-        double linear_control,
-        double angular_control,
-        const RobotConstraints& constraints
-    ) {
-        // Normalize to -1 to 1 range
-        cmd.throttle = std::clamp(linear_control / constraints.max_linear_velocity, -1.0, 1.0);
-        cmd.steering = std::clamp(angular_control / constraints.max_angular_velocity, -1.0, 1.0);
-    }
-    
-    void apply_control_to_command(
-        AckermannCommand& cmd,
-        double linear_control,
-        double angular_control,
-        const RobotConstraints& constraints
-    ) {
-        cmd.speed = std::clamp(linear_control,
-            constraints.min_linear_velocity, constraints.max_linear_velocity);
-        
-        // Convert angular velocity to steering angle
-        if (std::abs(cmd.speed) > 1e-6) {
-            double steering_angle = std::atan((angular_control * constraints.wheelbase) / cmd.speed);
-            cmd.steering_angle = std::clamp(steering_angle,
-                -constraints.max_steering_angle, constraints.max_steering_angle);
-        } else {
-            cmd.steering_angle = 0.0;
-        }
-    }
-    
-    void apply_control_to_command(
-        DifferentialCommand& cmd,
-        double linear_control,
-        double angular_control,
-        const RobotConstraints& constraints
-    ) {
-        // Convert to wheel speeds using differential drive kinematics
-        double linear = std::clamp(linear_control,
-            constraints.min_linear_velocity, constraints.max_linear_velocity);
-        double angular = std::clamp(angular_control,
-            -constraints.max_angular_velocity, constraints.max_angular_velocity);
-        
-        double half_track = constraints.track_width / 2.0;
-        cmd.left_speed = linear - (angular * half_track);
-        cmd.right_speed = linear + (angular * half_track);
-    }
 };
 
 } // namespace controllers

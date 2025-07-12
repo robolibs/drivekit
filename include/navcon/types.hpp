@@ -69,11 +69,7 @@ struct RobotConstraints {
 
 // Control output types
 enum class OutputType {
-    VELOCITY_COMMAND,      // Linear + angular velocity
-    ACKERMANN_COMMAND,    // Steering angle + speed
-    DIFFERENTIAL_COMMAND, // Left/right wheel speeds
-    NORMALIZED_COMMAND,   // -1 to 1 for each axis
-    MULTI_AXLE_COMMAND   // Front/rear steering + speed
+    VELOCITY_COMMAND      // Linear + angular velocity
 };
 
 // Base control output
@@ -90,39 +86,6 @@ struct VelocityCommand : public ControlOutput {
     double lateral_velocity = 0.0;  // m/s (holonomic only)
     
     VelocityCommand() { type = OutputType::VELOCITY_COMMAND; }
-};
-
-// Ackermann steering output
-struct AckermannCommand : public ControlOutput {
-    double speed = 0.0;          // m/s
-    double steering_angle = 0.0; // radians
-    
-    AckermannCommand() { type = OutputType::ACKERMANN_COMMAND; }
-};
-
-// Differential drive output
-struct DifferentialCommand : public ControlOutput {
-    double left_speed = 0.0;   // m/s or rad/s
-    double right_speed = 0.0;  // m/s or rad/s
-    
-    DifferentialCommand() { type = OutputType::DIFFERENTIAL_COMMAND; }
-};
-
-// Normalized output (-1 to 1)
-struct NormalizedCommand : public ControlOutput {
-    double throttle = 0.0;  // -1 (full reverse) to 1 (full forward)
-    double steering = 0.0;  // -1 (full left) to 1 (full right)
-    
-    NormalizedCommand() { type = OutputType::NORMALIZED_COMMAND; }
-};
-
-// Multi-axle steering output
-struct MultiAxleCommand : public ControlOutput {
-    double speed = 0.0;               // m/s
-    double front_steering_angle = 0.0; // radians
-    double rear_steering_angle = 0.0;  // radians
-    
-    MultiAxleCommand() { type = OutputType::MULTI_AXLE_COMMAND; }
 };
 
 // Controller configuration

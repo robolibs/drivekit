@@ -2,18 +2,18 @@
 
 #include "navcon/types.hpp"
 #include <memory>
+#include <cmath>
 
 namespace navcon {
 
 // Abstract base controller interface
-template<typename InputState = RobotState, typename OutputCommand = VelocityCommand>
 class Controller {
 public:
     virtual ~Controller() = default;
     
     // Main control computation
-    virtual OutputCommand compute_control(
-        const InputState& current_state,
+    virtual VelocityCommand compute_control(
+        const RobotState& current_state,
         const Goal& goal,
         const RobotConstraints& constraints,
         double dt
@@ -83,11 +83,5 @@ protected:
         return dist < config_.goal_tolerance && angle_diff < config_.angular_tolerance;
     }
 };
-
-// Type aliases for common controller types
-using VelocityController = Controller<RobotState, VelocityCommand>;
-using AckermannController = Controller<RobotState, AckermannCommand>;
-using DifferentialController = Controller<RobotState, DifferentialCommand>;
-using NormalizedController = Controller<RobotState, NormalizedCommand>;
 
 } // namespace navcon

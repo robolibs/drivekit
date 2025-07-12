@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-NavCon is a **simulator-agnostic, zero-dependency C++20 navigation controller library** designed for autonomous robots with diverse kinematic models. It provides a clean abstraction layer between high-level navigation algorithms and low-level robot control, supporting differential drive, Ackermann steering, and multi-axle robots.
+NavCon is a **simulator-agnostic, header-only C++20 navigation controller library** designed for autonomous robots. It provides a clean abstraction layer between high-level navigation algorithms and robot velocity control, focusing on producing linear and angular velocity commands that can be adapted to any robot platform.
 
 ## Architecture Philosophy
 
@@ -10,8 +10,8 @@ NavCon is a **simulator-agnostic, zero-dependency C++20 navigation controller li
 
 1. **Simulator Agnostic**: Works with any robotics framework (ROS, Gazebo, flatsim, real hardware)
 2. **Zero Dependencies**: Only depends on standard C++ libraries and the lightweight Concord geometry library
-3. **Template-Based Flexibility**: Supports multiple input states and output command types
-4. **Modular Design**: Separate kinematic models, control algorithms, and output adapters
+3. **Velocity-Based Output**: Produces linear and angular velocity commands that can be adapted to any robot
+4. **Algorithm Focus**: Clean implementations of proven navigation algorithms
 5. **Header-Only Implementation**: Easy integration without complex build dependencies
 
 ## System Architecture
@@ -29,36 +29,12 @@ NavCon is a **simulator-agnostic, zero-dependency C++20 navigation controller li
 │                           NAVCON INTERFACE                                  │
 │                                                                             │
 │    ┌─────────────────────────────────────────────────────────────────────┐ │
-│    │                       ROBOT CONFIGURATION                           │ │
-│    │  ┌─────────────────────────────────────────────────────────────────┐│ │
-│    │  │ struct RobotConfig {                                           ││ │
-│    │  │     std::vector<Wheel> wheels;  // Physical wheel setup        ││ │
-│    │  │     Size dimensions;           // Robot size                   ││ │
-│    │  │     // Auto-computed properties:                               ││ │
-│    │  │     double wheelbase;          // Front-rear distance          ││ │
-│    │  │     double track_width;        // Left-right distance          ││ │
-│    │  │     DriveType detect_drive_type();                             ││ │
-│    │  │ };                                                             ││ │
-│    │  │                                                                ││ │
-│    │  │ struct Wheel {                                                 ││ │
-│    │  │     Point position;            // Relative to robot center     ││ │
-│    │  │     double max_steer_angle;    // Steering capability          ││ │
-│    │  │     double max_throttle;       // Power capability             ││ │
-│    │  │     double steer_differential; // Differential steering        ││ │
-│    │  │     double throttle_differential;                              ││ │
-│    │  │ };                                                             ││ │
-│    │  └─────────────────────────────────────────────────────────────────┘│ │
-│    └─────────────────────────────────────────────────────────────────────┘ │
-│                                    │                                        │
-│                                    ▼                                        │
-│    ┌─────────────────────────────────────────────────────────────────────┐ │
 │    │                    CONTROLLER FACTORY                               │ │
 │    │  ┌─────────────────────────────────────────────────────────────────┐│ │
-│    │  │              Template Controller Base                           ││ │
-│    │  │  Controller<InputState, OutputCommand>                          ││ │
+│    │  │                Controller Base Class                           ││ │
 │    │  │  ┌─────────────────────────────────────────────────────────────┐││ │
-│    │  │  │ virtual OutputCommand compute_control(                      │││ │
-│    │  │  │     const InputState& current_state,                        │││ │
+│    │  │  │ virtual VelocityCommand compute_control(                    │││ │
+│    │  │  │     const RobotState& current_state,                        │││ │
 │    │  │  │     const Goal& goal,                                       │││ │
 │    │  │  │     const RobotConstraints& constraints,                    │││ │
 │    │  │  │     double dt)                                              │││ │
@@ -68,72 +44,45 @@ NavCon is a **simulator-agnostic, zero-dependency C++20 navigation controller li
 │                                    │                                        │
 │                                    ▼                                        │
 │    ┌─────────────────────────────────────────────────────────────────────┐ │
-│    │                      WHEEL CONTROLLER                               │ │
+│    │                   CONTROL ALGORITHMS                                │ │
+│    │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐│ │
+│    │  │     PID     │  │Pure Pursuit │  │   Stanley   │  │   Carrot    ││ │
+│    │  │ Controller  │  │ Controller  │  │ Controller  │  │ Controller  ││ │
+│    │  │             │  │             │  │             │  │             ││ │
+│    │  │ • Point-to- │  │ • Geometric │  │ • Cross-    │  │ • Simple    ││ │
+│    │  │   Point     │  │   Path      │  │   Track     │  │   Goal      ││ │
+│    │  │ • Linear +  │  │   Following │  │   Error     │  │   Chasing   ││ │
+│    │  │   Angular   │  │ • Lookahead │  │ • Stanley   │  │ • Direct    ││ │
+│    │  │   PID       │  │   Distance  │  │   Formula   │  │   Control   ││ │
+│    │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘│ │
+│    └─────────────────────────────────────────────────────────────────────┘ │
+│                                    │                                        │
+│                                    ▼                                        │
+│    ┌─────────────────────────────────────────────────────────────────────┐ │
+│    │                     VELOCITY COMMAND OUTPUT                        │ │
 │    │  ┌─────────────────────────────────────────────────────────────────┐│ │
-│    │  │ WheelController(const RobotConfig& config)                     ││ │
-│    │  │                                                                ││ │
-│    │  │ WheelCommands velocity_to_wheels(VelocityCommand)              ││ │
-│    │  │ WheelCommands normalized_to_wheels(NormalizedCommand)          ││ │
-│    │  │                                                                ││ │
-│    │  │ // Output: Individual wheel steering & throttle                ││ │
-│    │  │ struct WheelCommand {                                          ││ │
-│    │  │     double steering_angle;                                     ││ │
-│    │  │     double throttle;                                           ││ │
-│    │  │ };                                                             ││ │
+│    │  │ struct VelocityCommand {                                        ││ │
+│    │  │     double linear_velocity;   // m/s (forward/backward)         ││ │
+│    │  │     double angular_velocity;  // rad/s (left/right)             ││ │
+│    │  │     double lateral_velocity;  // m/s (holonomic only)           ││ │
+│    │  │ };                                                              ││ │
 │    │  └─────────────────────────────────────────────────────────────────┘│ │
 │    └─────────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        CONTROL ALGORITHMS LAYER                            │
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │     PID     │  │Pure Pursuit │  │   Stanley   │  │   Carrot    │        │
-│  │ Controller  │  │ Controller  │  │ Controller  │  │ Controller  │        │
-│  │             │  │             │  │             │  │             │        │
-│  │ • Linear    │  │ • Geometric │  │ • Cross-    │  │ • Simple    │        │
-│  │   Control   │  │   Path      │  │   Track     │  │   Point     │        │
-│  │ • Angular   │  │   Following │  │   Error     │  │   Following │        │
-│  │   Control   │  │ • Lookahead │  │ • Heading   │  │ • Propor-   │        │
-│  │ • Velocity  │  │   Distance  │  │   Error     │  │   tional    │        │
-│  │   Based     │  │ • Curvature │  │ • Ackermann │  │   Control   │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        KINEMATIC MODELS LAYER                              │
+│                        ROBOT ADAPTATION LAYER                              │
+│                    (Implemented by Application)                            │
 │                                                                             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
 │  │Differential │  │  Ackermann  │  │ Multi-Axle  │  │  Holonomic  │        │
-│  │    Drive    │  │   Steering  │  │  Steering   │  │   (Future)  │        │
-│  │             │  │             │  │             │  │             │        │
-│  │ • Can       │  │ • Fixed     │  │ • Front +   │  │ • Omni-     │        │
-│  │   Rotate    │  │   Wheelbase │  │   Rear      │  │   directional│        │
-│  │   in Place  │  │ • Min Turn  │  │   Steering  │  │ • X/Y/Theta │        │
-│  │ • Left/Right│  │   Radius    │  │ • Complex   │  │   Control   │        │
-│  │   Wheels    │  │ • Speed +   │  │   Kinematics│  │ • Decoupled │        │
-│  │ • Simple    │  │   Steering  │  │ • Multiple  │  │   Motion    │        │
-│  │   Kinematics│  │   Angle     │  │   Modes     │  │             │        │
+│  │ Drive Adapt │  │ Steering    │  │ Complex     │  │ Omni-wheel  │        │
+│  │             │  │ Adapt       │  │ Adaptation  │  │ Adaptation  │        │
+│  │ • Split     │  │ • Convert   │  │ • Custom    │  │ • Direct    │        │
+│  │   L/R Wheel │  │   to Speed/ │  │   Kinematic │  │   X/Y/Theta │        │
+│  │   Commands  │  │   Steering  │  │   Mapping   │  │   Control   │        │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         OUTPUT ADAPTERS LAYER                               │
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │  Velocity   │  │  Ackermann  │  │Differential │  │ Normalized  │         │
-│  │  Command    │  │   Command   │  │   Command   │  │   Command   │         │
-│  │             │  │             │  │             │  │             │         │
-│  │ • Linear    │  │ • Speed     │  │ • Left      │  │ • Throttle  │         │
-│  │   Velocity  │  │   (m/s)     │  │   Speed     │  │   (-1 to 1) │         │
-│  │ • Angular   │  │ • Steering  │  │ • Right     │  │ • Steering  │         │
-│  │   Velocity  │  │   Angle     │  │   Speed     │  │   (-1 to 1) │         │
-│  │ • Lateral   │  │   (rad)     │  │ • Wheel     │  │ • Gamepad   │         │
-│  │   (Holonomic│  │             │  │   Based     │  │   Style     │         │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘         │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
