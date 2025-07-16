@@ -5,10 +5,9 @@
 #include <functional>
 #include <unordered_map>
 #include "navcon/controller.hpp"
-#include "navcon/controllers/pid.hpp"
-#include "navcon/controllers/pure_pursuit.hpp"
-#include "navcon/controllers/stanley.hpp"
-#include "navcon/controllers/carrot.hpp"
+#include "navcon/followers/pid.hpp"
+#include "navcon/followers/pure_pursuit.hpp"
+#include "navcon/followers/carrot.hpp"
 
 namespace navcon {
 
@@ -54,26 +53,22 @@ public:
     
     // Register default controllers
     void register_defaults() {
-        using namespace controllers;
+        using namespace followers;
         
         // PID controller
         register_controller("pid", [](const ControllerConfig& config) {
-            return std::make_unique<PIDController>();
+            return std::make_unique<PIDFollower>();
         });
         
         // Pure Pursuit controller
         register_controller("pure_pursuit", [](const ControllerConfig& config) {
-            return std::make_unique<PurePursuitController>();
+            return std::make_unique<PurePursuitFollower>();
         });
         
-        // Stanley controller
-        register_controller("stanley", [](const ControllerConfig& config) {
-            return std::make_unique<StanleyController>();
-        });
         
         // Carrot controller
         register_controller("carrot", [](const ControllerConfig& config) {
-            return std::make_unique<CarrotController>();
+            return std::make_unique<CarrotFollower>();
         });
     }
     

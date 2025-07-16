@@ -486,7 +486,7 @@ namespace navcon {
 
             case NavconControllerType::PATH_CONTROLLER:
                 std::cout << "Creating Path controller..." << std::endl;
-                path_controller = std::make_unique<PathController>(PathController::FollowerType::STANLEY);
+                path_controller = std::make_unique<PathController>(PathController::FollowerType::PURE_PURSUIT);
                 controller.reset();
                 
                 // Configure path controller
