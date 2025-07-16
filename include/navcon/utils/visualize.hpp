@@ -302,7 +302,7 @@ inline std::shared_ptr<rerun::RecordingStream> init_recording(const std::string&
 
 // Clear all entities
 inline void clear_all(std::shared_ptr<rerun::RecordingStream> rec) {
-    rec->log_static("", rerun::Clear(true));
+    rec->log("", rerun::Clear(true));
 }
 
 } // namespace visualize
