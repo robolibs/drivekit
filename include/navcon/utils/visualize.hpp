@@ -164,7 +164,7 @@ namespace navcon {
             // Robot position
             rec->log_static(
                 entity_path + "/position",
-                rerun::Points3D({{pose.point.x, pose.point.y, 0.0f}}).with_colors(color).with_radii(0.05f * scale));
+                rerun::Points3D({{pose.point.x, pose.point.y, 0.0f}}).with_colors(color).with_radii(0.02f * scale));
 
             // Robot orientation (arrow)
             float arrow_length = 0.5f * scale;
