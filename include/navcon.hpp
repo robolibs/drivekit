@@ -13,5 +13,11 @@
 #include "navcon/controllers/stanley.hpp"
 #include "navcon/controllers/carrot.hpp"
 
+// Advanced controllers
+#include "navcon/path_controller.hpp"
+
+// High-level interface
+#include "navcon/navcon.hpp"
+
 // Utilities
 #include "navcon/factory.hpp"

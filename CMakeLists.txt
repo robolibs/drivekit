@@ -22,6 +22,10 @@ include(FetchContent)
 # --------------------------------------------------------------------------------------------------
 set(ext_deps)
 
+FetchContent_Declare(rerun_sdk URL https://github.com/rerun-io/rerun/releases/latest/download/rerun_cpp_sdk.zip)
+FetchContent_MakeAvailable(rerun_sdk)
+list(APPEND ext_deps rerun_sdk)
+
 FetchContent_Declare(concord GIT_REPOSITORY https://github.com/onlyhead/concord.git GIT_TAG 2.0.2)
 FetchContent_MakeAvailable(concord)
 list(APPEND ext_deps concord::concord)
