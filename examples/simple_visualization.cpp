@@ -16,6 +16,10 @@ int main() {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
     }
+    
+    // Clear previous visualization data (allows running multiple times without restarting rerun)
+    rec->log("", rerun::Clear::RECURSIVE);
+    
     // No grid or coordinate system - just the essential elements
     
     // Generate random start and end poses
