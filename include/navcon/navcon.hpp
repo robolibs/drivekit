@@ -231,6 +231,68 @@ namespace navcon {
             clear_path();
         }
 
+        // Smoothen path by adding interpolated points between waypoints
+        void smoothen(float interval_cm = 100.0f) {
+            if (!current_path.has_value() || current_path->waypoints.size() < 2) {
+                return;
+            }
+
+            float interval_m = interval_cm / 100.0f; // Convert cm to meters
+            std::vector<concord::Point> smoothed_waypoints;
+            
+            // Always keep the first waypoint
+            smoothed_waypoints.push_back(current_path->waypoints[0]);
+
+            for (size_t i = 0; i < current_path->waypoints.size() - 1; ++i) {
+                const auto& start = current_path->waypoints[i];
+                const auto& end = current_path->waypoints[i + 1];
+                
+                // Calculate distance between waypoints
+                float dx = end.x - start.x;
+                float dy = end.y - start.y;
+                float distance = std::sqrt(dx * dx + dy * dy);
+                
+                // Calculate number of segments needed
+                int num_segments = static_cast<int>(std::ceil(distance / interval_m));
+                
+                // Add interpolated points (skip the first one as it's already added)
+                for (int j = 1; j < num_segments; ++j) {
+                    float t = static_cast<float>(j) / num_segments;
+                    concord::Point interpolated;
+                    interpolated.x = start.x + t * dx;
+                    interpolated.y = start.y + t * dy;
+                    smoothed_waypoints.push_back(interpolated);
+                }
+                
+                // Add the end waypoint
+                smoothed_waypoints.push_back(end);
+            }
+
+            // Update the current path with smoothed waypoints
+            current_path->waypoints = smoothed_waypoints;
+            current_waypoint_index = 0; // Reset to start
+            
+            std::cout << "Path smoothened: " << smoothed_waypoints.size() << " waypoints (interval: " 
+                      << interval_cm << "cm)" << std::endl;
+
+            // Update the path in controllers
+            Path navcon_path;
+            for (const auto &waypoint : current_path->waypoints) {
+                Pose wp;
+                wp.point = waypoint;
+                wp.angle = concord::Euler{0.0f, 0.0f, 0.0f};
+                navcon_path.waypoints.push_back(wp);
+            }
+            navcon_path.is_closed = current_path->loop;
+            
+            if (controller) {
+                controller->set_path(navcon_path);
+            }
+            if (path_controller) {
+                path_controller->set_path(navcon_path);
+            }
+        }
+
         // Direct access to path controller for advanced usage
         PathController* get_path_controller() { return path_controller.get(); }
         const PathController* get_path_controller() const { return path_controller.get(); }
