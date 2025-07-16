@@ -112,9 +112,6 @@ int main() {
     // Show shortest Reeds-Shepp path highlighted
     navcon::visualize::show_reeds_shepp_path(rec, shortest_rs, "shortest_reeds_shepp", rerun::Color(255, 0, 255));
 
-    std::cout << "Check the Rerun viewer at http://localhost:9876" << std::endl;
-    std::cout << "Press Enter to exit..." << std::endl;
-    std::cin.get();
 
 #else
     std::cout << "Visualization not enabled. Rebuild with -DNAVCON_ENABLE_VISUALIZATION=ON" << std::endl;

@@ -68,9 +68,10 @@ public:
     double distance(double q0[3], double q1[3]);
     DubinsPath dubins(double q0[3], double q1[3]) const;
 
+public:
+    void interpolate(double q0[3], DubinsPath &path, double seg, double s[3]) const;
 protected:
     double rho_;
-    void interpolate(double q0[3], DubinsPath &path, double seg, double s[3]) const;
 };
 
 class Dubins {
@@ -142,16 +143,16 @@ public:
                     path.segments.push_back(segment);
                 }
                 
-                // Generate waypoints
-                double length;
-                std::vector<std::vector<double>> points;
-                ds_.sample(q0, q1, step_size, length, points);
-                
-                for (const auto& point : points) {
+                // Generate waypoints for this specific path
+                double total_length = dubins_path.length() * radius_;
+                for (double seg = 0.0; seg <= total_length; seg += step_size) {
+                    double qnew[3] = {0.0, 0.0, 0.0};
+                    ds_.interpolate(q0, dubins_path, seg / radius_, qnew);
+                    
                     Pose pose;
-                    pose.point.x = point[0];
-                    pose.point.y = point[1];
-                    pose.angle.yaw = point[2];
+                    pose.point.x = qnew[0];
+                    pose.point.y = qnew[1];
+                    pose.angle.yaw = qnew[2];
                     path.waypoints.push_back(pose);
                 }
                 
