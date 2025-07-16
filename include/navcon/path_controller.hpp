@@ -3,8 +3,8 @@
 #include "navcon/controller.hpp"
 #include "navcon/followers/stanley.hpp"
 #include "navcon/followers/pure_pursuit.hpp"
-#include "navcon/turners/point_turner.hpp"
-#include "navcon/turners/u_turn_turner.hpp"
+#include "navcon/turners/dubins.hpp"
+#include "navcon/turners/reeds_shepp.hpp"
 #include <memory>
 #include <cmath>
 
@@ -15,8 +15,7 @@ class PathController : public Controller {
 public:
     enum class ControllerType {
         FOLLOWER,
-        POINT_TURNER,
-        U_TURN_TURNER
+        REEDS_SHEPP_TURNER
     };
     
     enum class FollowerType {
@@ -24,7 +23,8 @@ public:
         PURE_PURSUIT
     };
     
-    PathController(FollowerType follower_type = FollowerType::STANLEY) {
+    PathController(FollowerType follower_type = FollowerType::STANLEY, double min_turning_radius = 2.0) 
+        : min_turning_radius_(min_turning_radius) {
         // Create the follower
         switch (follower_type) {
             case FollowerType::STANLEY:
@@ -35,9 +35,8 @@ public:
                 break;
         }
         
-        // Create turners
-        point_turner_ = std::make_unique<turners::PointTurner>();
-        u_turn_turner_ = std::make_unique<turners::UTurnTurner>();
+        // Create Reeds-Shepp turner
+        reeds_shepp_ = std::make_unique<turners::ReedsShepp>(min_turning_radius_);
         
         // Start with follower
         active_type_ = ControllerType::FOLLOWER;
