@@ -8,7 +8,7 @@ THis package is based on the work of repositories:
 
 
 Papers:
-
+==========
 .. [Reeds90] Reeds, J., & Shepp, L. (1990). Optimal paths for a car that goes both forwards and backwards. Pacific journal of mathematics, 145(2), 367-393.
 .. [Dubins51] Dubins, L.E. (July 1957). "On Curves of Minimal Length with a Constraint on Average Curvature, and with Prescribed Initial and Terminal Positions and Tangents". American Journal of Mathematics 79 (3): 497–516
 .. [LaValle06] LaValle, S. M. (2006). "Planning Algorithms". Cambridge University Press
