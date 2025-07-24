@@ -35,6 +35,31 @@ public:
         , machine_width_(machine_width > 0 ? machine_width : machine_length * 0.4) {}
 
     /**
+     * @brief Generate a sharp turn path at the same point
+     * Creates overlapping lines from the turning point in both directions
+     * 
+     * @param turning_point The point where the turn happens
+     * @param old_heading Initial heading direction (radians)
+     * @param new_heading Target heading direction (radians)
+     * @param pattern Type of turn: "three_point", "bulb", "fishtail", "auto"
+     * @return SharpTurnPath with waypoints and metadata
+     */
+    SharpTurnPath plan_sharp_turn_at_point(const Point& turning_point,
+                                          double old_heading, double new_heading,
+                                          const std::string& pattern = "auto") const {
+        // Create start and end poses at the same point with different headings
+        Pose start;
+        start.point = turning_point;
+        start.angle.yaw = old_heading;
+        
+        Pose end;
+        end.point = turning_point;
+        end.angle.yaw = new_heading;
+        
+        return plan_sharp_turn(start, end, pattern);
+    }
+    
+    /**
      * @brief Generate a sharp turn path between two poses
      * 
      * @param start Starting pose
@@ -64,51 +89,45 @@ public:
 
     /**
      * @brief Generate a three-point (switch-back) turn
-     * Used for very tight spaces where vehicle must reverse
+     * Used when machine needs to change direction at the same point
+     * Pattern: forward along old heading -> reverse with turn -> forward along new heading
      */
     SharpTurnPath generate_three_point_turn(const Pose& start, const Pose& end,
                                            double turn_angle) const {
         SharpTurnPath path;
         path.pattern_name = "three_point";
         
-        // Key distances based on machine length
-        double approach_dist = 1.5 * machine_length_;  // Distance to drive forward
-        double backup_dist = 1.0 * machine_length_;    // Distance to reverse
+        // The turn must happen at the same point, so start and end should be at same location
+        // with different headings
         
-        // Start position
+        // Key distances based on machine length
+        double forward_dist = machine_length_;  // Go forward one machine length
+        double reverse_dist = machine_length_;  // Reverse the same distance
+        
+        // Start position (same point as end, different heading)
         path.waypoints.push_back(start);
         path.segment_types.push_back("start");
         
-        // 1. Drive forward in starting direction
-        Pose forward_point = start;
-        forward_point.point.x += approach_dist * cos(start.angle.yaw);
-        forward_point.point.y += approach_dist * sin(start.angle.yaw);
+        // 1. Drive forward in starting direction (along old heading line)
+        Pose forward_point;
+        forward_point.point.x = start.point.x + forward_dist * cos(start.angle.yaw);
+        forward_point.point.y = start.point.y + forward_dist * sin(start.angle.yaw);
         forward_point.angle.yaw = start.angle.yaw;
         path.waypoints.push_back(forward_point);
-        path.segment_types.push_back("approach_forward");
+        path.segment_types.push_back("forward_along_old_heading");
         
-        // 2. Calculate intermediate angle (roughly halfway between start and end)
-        double intermediate_angle = normalize_angle(start.angle.yaw + turn_angle * 0.5);
-        
-        // 3. Reverse with steering toward intermediate direction
-        Pose reverse_point = forward_point;
-        reverse_point.point.x -= backup_dist * cos(intermediate_angle);
-        reverse_point.point.y -= backup_dist * sin(intermediate_angle);
-        reverse_point.angle.yaw = intermediate_angle;
+        // 2. Reverse with steering to align with new heading
+        // The reverse endpoint is along the new heading line, backwards from the turning point
+        Pose reverse_point;
+        reverse_point.point.x = start.point.x - reverse_dist * cos(end.angle.yaw);
+        reverse_point.point.y = start.point.y - reverse_dist * sin(end.angle.yaw);
+        reverse_point.angle.yaw = end.angle.yaw;  // Now aligned with new heading
         path.waypoints.push_back(reverse_point);
-        path.segment_types.push_back("reverse");
+        path.segment_types.push_back("reverse_with_turn");
         
-        // 4. Drive forward toward final direction
-        Pose final_approach = reverse_point;
-        final_approach.point.x += approach_dist * cos(end.angle.yaw);
-        final_approach.point.y += approach_dist * sin(end.angle.yaw);
-        final_approach.angle.yaw = end.angle.yaw;
-        path.waypoints.push_back(final_approach);
-        path.segment_types.push_back("final_approach");
-        
-        // 5. End position
+        // 3. Return to the turning point (now facing the new direction)
         path.waypoints.push_back(end);
-        path.segment_types.push_back("end");
+        path.segment_types.push_back("forward_to_turning_point");
         
         calculate_path_length(path);
         return path;
@@ -220,6 +239,33 @@ public:
         return path;
     }
 
+    /**
+     * @brief Create overlapping lines for sharp turn visualization
+     * Returns the two line segments that define the turn geometry
+     */
+    struct TurnGeometry {
+        Point forward_end;   // End of forward line (old heading)
+        Point reverse_end;   // End of reverse line (new heading)
+        Point turn_center;   // Center point of turn
+        double turn_angle;   // Angle between headings
+    };
+    
+    TurnGeometry calculate_turn_geometry(const Pose& start, const Pose& end) const {
+        TurnGeometry geom;
+        geom.turn_center = start.point;  // Assuming turn at same point
+        geom.turn_angle = calculate_turn_angle(start, end);
+        
+        // Forward line along old heading
+        geom.forward_end.x = start.point.x + machine_length_ * cos(start.angle.yaw);
+        geom.forward_end.y = start.point.y + machine_length_ * sin(start.angle.yaw);
+        
+        // Reverse line along new heading (backwards from center)
+        geom.reverse_end.x = start.point.x - machine_length_ * cos(end.angle.yaw);
+        geom.reverse_end.y = start.point.y - machine_length_ * sin(end.angle.yaw);
+        
+        return geom;
+    }
+
 private:
     double radius_;
     double machine_length_;
@@ -248,15 +294,26 @@ private:
                                      double turn_angle) const {
         double angle_deg = fabs(turn_angle) * 180.0 / M_PI;
         
-        // Decision logic based on turn angle and available space
-        if (angle_deg > 150) {
-            // Very sharp turn - need three-point
+        // Check if this is a same-point turn (start and end at same location)
+        double dist = sqrt(pow(end.point.x - start.point.x, 2) + 
+                          pow(end.point.y - start.point.y, 2));
+        
+        bool same_point_turn = (dist < 0.1 * machine_length_);  // Within 10% of machine length
+        
+        if (same_point_turn) {
+            // For same-point turns, three-point is most appropriate
             return generate_three_point_turn(start, end, turn_angle);
-        } else if (angle_deg > 90) {
-            // Moderate sharp turn - bulb is efficient
+        }
+        
+        // For different point turns, choose based on angle
+        if (angle_deg > 120) {
+            // Sharp turn - use three-point for precision
+            return generate_three_point_turn(start, end, turn_angle);
+        } else if (angle_deg > 60) {
+            // Moderate turn - bulb is efficient
             return generate_bulb_turn(start, end, turn_angle);
         } else {
-            // Wider turn - fishtail gives smooth path
+            // Wide turn - fishtail gives smooth path
             return generate_fishtail_turn(start, end, turn_angle);
         }
     }

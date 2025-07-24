@@ -33,9 +33,9 @@ int main() {
 
     // Random end pose further from start
     navcon::Pose end = start;
-    // end.point.x = start.point.x + (std::rand() / (double)RAND_MAX) * 6.0 - 3.0; // Within ±3 of start
-    // end.point.y = start.point.y + (std::rand() / (double)RAND_MAX) * 6.0 - 3.0; // Within ±3 of start
-    end.angle.yaw = (std::rand() / (double)RAND_MAX) * 2.0 * M_PI - M_PI;       // Random angle between -π and π
+    end.point.x = start.point.x + (std::rand() / (double)RAND_MAX) * 6.0 - 3.0; // Within ±3 of start
+    end.point.y = start.point.y + (std::rand() / (double)RAND_MAX) * 6.0 - 3.0; // Within ±3 of start
+    end.angle.yaw = (std::rand() / (double)RAND_MAX) * 2.0 * M_PI - M_PI; // Random angle between -π and π
 
     // Visualize poses
     navcon::visualize::show_robot_pose(rec, start, "start", rerun::Color(0, 255, 0)); // Green start
