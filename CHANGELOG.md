@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1] - 2025-10-22
+
+### <!-- 2 -->🚜 Refactor
+
+- Add `inline` specifiers to functions
+
 ## [0.1.0] - 2025-10-15
 
 ### <!-- 0 -->⛰️  Features
