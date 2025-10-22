@@ -85,7 +85,7 @@ struct VelocityCommand : public ControlOutput {
     double angular_velocity = 0.0;  // rad/s
     double lateral_velocity = 0.0;  // m/s (holonomic only)
     
-    VelocityCommand() { type = OutputType::VELOCITY_COMMAND; }
+    inline VelocityCommand() { type = OutputType::VELOCITY_COMMAND; }
 };
 
 // Controller configuration

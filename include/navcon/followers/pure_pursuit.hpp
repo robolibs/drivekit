@@ -88,10 +88,10 @@ namespace navcon {
                 return cmd;
             }
 
-            std::string get_type() const override { return "pure_pursuit_follower"; }
+            inline std::string get_type() const override { return "pure_pursuit_follower"; }
 
           private:
-            std::optional<Point> find_lookahead_point(const Pose &current_pose) {
+            inline std::optional<Point> find_lookahead_point(const Pose &current_pose) {
                 if (path_.waypoints.empty()) return std::nullopt;
 
                 // FIXED waypoint progression: advance when close OR when we've passed the waypoint

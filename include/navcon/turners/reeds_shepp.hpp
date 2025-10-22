@@ -22,7 +22,7 @@ namespace navcon {
             double length;
             bool forward;
 
-            ReedsSheppSegment(ReedsSheppSegmentType t, double l, bool fwd = true) : type(t), length(l), forward(fwd) {}
+            inline ReedsSheppSegment(ReedsSheppSegmentType t, double l, bool fwd = true) : type(t), length(l), forward(fwd) {}
         };
 
         struct ReedsSheppPath {
@@ -31,7 +31,7 @@ namespace navcon {
             double total_length;
             std::string name;
 
-            ReedsSheppPath() : total_length(0.0) {}
+            inline ReedsSheppPath() : total_length(0.0) {}
         };
 
         class ReedsSheppStateSpace {
@@ -53,7 +53,7 @@ namespace navcon {
                     length_[4] = x;
                 }
 
-                double length() const { return totalLength_; }
+                inline double length() const { return totalLength_; }
 
                 const ReedsSheppPathSegmentType *type_;
                 double length_[5];
@@ -151,7 +151,7 @@ namespace navcon {
           private:
             ReedsSheppStateSpace rs_;
 
-            void sampleSpecificPath(const ReedsSheppStateSpace::ReedsSheppPath &rs_path, double q0[3], double step_size,
+            inline void sampleSpecificPath(const ReedsSheppStateSpace::ReedsSheppPath &rs_path, double q0[3], double step_size,
                                     std::vector<Pose> &waypoints) const {
                 waypoints.clear();
 
@@ -170,7 +170,7 @@ namespace navcon {
                 }
             }
 
-            std::string getPathName(const ReedsSheppStateSpace::ReedsSheppPath &path) const {
+            inline std::string getPathName(const ReedsSheppStateSpace::ReedsSheppPath &path) const {
                 std::string name = "RS_";
                 for (int i = 0; i < 5; ++i) {
                     if (path.type_[i] == ReedsSheppStateSpace::RS_NOP) break;

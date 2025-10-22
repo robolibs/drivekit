@@ -43,7 +43,7 @@ namespace navcon {
              * @param pattern Type of turn: "three_point", "bulb", "fishtail", "auto"
              * @return SharpTurnPath with waypoints and metadata
              */
-            SharpTurnPath plan_sharp_turn_at_point(const Point &turning_point, double old_heading, double new_heading,
+            inline SharpTurnPath plan_sharp_turn_at_point(const Point &turning_point, double old_heading, double new_heading,
                                                    const std::string &pattern = "auto") const {
                 // Create start and end poses at the same point with different headings
                 Pose start;
@@ -66,7 +66,7 @@ namespace navcon {
              * @param pattern Type of turn: "three_point", "bulb", "fishtail", "auto"
              * @return SharpTurnPath with waypoints and metadata
              */
-            SharpTurnPath plan_sharp_turn(const Pose &start, const Pose &end,
+            inline SharpTurnPath plan_sharp_turn(const Pose &start, const Pose &end,
                                           const std::string &pattern = "auto") const {
 
                 // Calculate turn angle
@@ -90,7 +90,7 @@ namespace navcon {
              * Used when machine needs to change direction at the same point
              * Pattern: forward along old heading -> reverse with turn -> forward along new heading
              */
-            SharpTurnPath generate_three_point_turn(const Pose &start, const Pose &end, double turn_angle) const {
+            inline SharpTurnPath generate_three_point_turn(const Pose &start, const Pose &end, double turn_angle) const {
                 SharpTurnPath path;
                 path.pattern_name = "three_point";
 
@@ -134,7 +134,7 @@ namespace navcon {
              * @brief Generate a bulb turn
              * A wider turn that looks like a light bulb shape
              */
-            SharpTurnPath generate_bulb_turn(const Pose &start, const Pose &end, double turn_angle) const {
+            inline SharpTurnPath generate_bulb_turn(const Pose &start, const Pose &end, double turn_angle) const {
                 SharpTurnPath path;
                 path.pattern_name = "bulb";
 
@@ -180,7 +180,7 @@ namespace navcon {
              * @brief Generate a fishtail turn
              * An S-shaped turn that extends beyond the corner
              */
-            SharpTurnPath generate_fishtail_turn(const Pose &start, const Pose &end, double turn_angle) const {
+            inline SharpTurnPath generate_fishtail_turn(const Pose &start, const Pose &end, double turn_angle) const {
                 SharpTurnPath path;
                 path.pattern_name = "fishtail";
 
@@ -245,7 +245,7 @@ namespace navcon {
                 double turn_angle; // Angle between headings
             };
 
-            TurnGeometry calculate_turn_geometry(const Pose &start, const Pose &end) const {
+            inline TurnGeometry calculate_turn_geometry(const Pose &start, const Pose &end) const {
                 TurnGeometry geom;
                 geom.turn_center = start.point; // Assuming turn at same point
                 geom.turn_angle = calculate_turn_angle(start, end);
@@ -266,17 +266,17 @@ namespace navcon {
             double machine_length_;
             double machine_width_;
 
-            double calculate_turn_angle(const Pose &start, const Pose &end) const {
+            inline double calculate_turn_angle(const Pose &start, const Pose &end) const {
                 return normalize_angle(end.angle.yaw - start.angle.yaw);
             }
 
-            double normalize_angle(double angle) const {
+            inline double normalize_angle(double angle) const {
                 while (angle > M_PI) angle -= 2 * M_PI;
                 while (angle < -M_PI) angle += 2 * M_PI;
                 return angle;
             }
 
-            void calculate_path_length(SharpTurnPath &path) const {
+            inline void calculate_path_length(SharpTurnPath &path) const {
                 path.total_length = 0.0;
                 for (size_t i = 1; i < path.waypoints.size(); ++i) {
                     double dx = path.waypoints[i].point.x - path.waypoints[i - 1].point.x;
@@ -285,7 +285,7 @@ namespace navcon {
                 }
             }
 
-            SharpTurnPath select_best_pattern(const Pose &start, const Pose &end, double turn_angle) const {
+            inline SharpTurnPath select_best_pattern(const Pose &start, const Pose &end, double turn_angle) const {
                 double angle_deg = fabs(turn_angle) * 180.0 / M_PI;
 
                 // Check if this is a same-point turn (start and end at same location)

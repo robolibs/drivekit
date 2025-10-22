@@ -25,7 +25,7 @@ namespace navcon {
             double total_length;
             std::string name;
 
-            DubinsPath() : total_length(0.0) {}
+            inline DubinsPath() : total_length(0.0) {}
         };
 
         class DubinsStateSpace {
@@ -47,7 +47,7 @@ namespace navcon {
                     assert(q >= 0.);
                 }
 
-                double length() const { return length_[0] + length_[1] + length_[2]; }
+                inline double length() const { return length_[0] + length_[1] + length_[2]; }
 
                 const DubinsPathSegmentType *type_;
                 double length_[3];
@@ -55,10 +55,10 @@ namespace navcon {
 
             inline DubinsStateSpace(double turningRadius = 1.0) : rho_(turningRadius) {}
 
-            void sample(double q0[3], double q1[3], double step_size, double &length,
+            inline void sample(double q0[3], double q1[3], double step_size, double &length,
                         std::vector<std::vector<double>> &points) const;
-            double distance(double q0[3], double q1[3]);
-            DubinsPath dubins(double q0[3], double q1[3]) const;
+            inline double distance(double q0[3], double q1[3]);
+            inline DubinsPath dubins(double q0[3], double q1[3]) const;
 
           public:
             inline void interpolate(double q0[3], DubinsPath &path, double seg, double s[3]) const;
