@@ -199,7 +199,7 @@ namespace navcon {
         };
 
         // Static path types
-        const ReedsSheppStateSpace::ReedsSheppPathSegmentType ReedsSheppStateSpace::reedsSheppPathType[18][5] = {
+        inline const ReedsSheppStateSpace::ReedsSheppPathSegmentType ReedsSheppStateSpace::reedsSheppPathType[18][5] = {
             {RS_LEFT, RS_RIGHT, RS_LEFT, RS_NOP, RS_NOP},        // 0
             {RS_RIGHT, RS_LEFT, RS_RIGHT, RS_NOP, RS_NOP},       // 1
             {RS_LEFT, RS_RIGHT, RS_LEFT, RS_RIGHT, RS_NOP},      // 2

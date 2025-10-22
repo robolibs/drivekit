@@ -251,12 +251,12 @@ namespace navcon {
         };
 
         // Static constants
-        const double Dubins::twopi = 2. * M_PI;
-        const double Dubins::DUBINS_EPS = 1e-6;
-        const double Dubins::DUBINS_ZERO = -1e-7;
+        inline const double Dubins::twopi = 2. * M_PI;
+        inline const double Dubins::DUBINS_EPS = 1e-6;
+        inline const double Dubins::DUBINS_ZERO = -1e-7;
 
         // Static path types
-        const DubinsStateSpace::DubinsPathSegmentType DubinsStateSpace::dubinsPathType[6][3] = {
+        inline const DubinsStateSpace::DubinsPathSegmentType DubinsStateSpace::dubinsPathType[6][3] = {
             {DUBINS_LEFT, DUBINS_STRAIGHT, DUBINS_LEFT},  {DUBINS_RIGHT, DUBINS_STRAIGHT, DUBINS_RIGHT},
             {DUBINS_RIGHT, DUBINS_STRAIGHT, DUBINS_LEFT}, {DUBINS_LEFT, DUBINS_STRAIGHT, DUBINS_RIGHT},
             {DUBINS_RIGHT, DUBINS_LEFT, DUBINS_RIGHT},    {DUBINS_LEFT, DUBINS_RIGHT, DUBINS_LEFT}};
