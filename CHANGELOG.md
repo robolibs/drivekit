@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2] - 2025-10-23
+
+### <!-- 2 -->🚜 Refactor
+
+- Make static constants and path types inline
+
 ## [0.1.1] - 2025-10-22
 
 ### <!-- 2 -->🚜 Refactor
