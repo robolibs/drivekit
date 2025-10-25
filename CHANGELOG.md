@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.3] - 2025-10-25
+
+### <!-- 2 -->🚜 Refactor
+
+- Remove unused path planners and simplify visualizations
+
 ## [0.1.2] - 2025-10-23
 
 ### <!-- 2 -->🚜 Refactor
