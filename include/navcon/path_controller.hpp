@@ -2,8 +2,6 @@
 
 #include "navcon/controller.hpp"
 #include "navcon/followers/pure_pursuit.hpp"
-#include "navcon/turners/dubins.hpp"
-#include "navcon/turners/reeds_shepp.hpp"
 #include <cmath>
 #include <memory>
 
@@ -12,7 +10,7 @@ namespace navcon {
     // Main controller that switches between followers and turners based on path analysis
     class PathController : public Controller {
       public:
-        enum class ControllerType { FOLLOWER, REEDS_SHEPP_TURNER };
+        enum class ControllerType { FOLLOWER };
 
         enum class FollowerType { PURE_PURSUIT };
 
@@ -24,9 +22,6 @@ namespace navcon {
                 follower_ = std::make_unique<followers::PurePursuitFollower>();
                 break;
             }
-
-            // Create Reeds-Shepp turner
-            reeds_shepp_ = std::make_unique<turners::ReedsShepp>(min_turning_radius_);
 
             // Start with follower
             active_type_ = ControllerType::FOLLOWER;
@@ -86,22 +81,18 @@ namespace navcon {
             switch (active_type_) {
             case ControllerType::FOLLOWER:
                 return "follower";
-            case ControllerType::REEDS_SHEPP_TURNER:
-                return "reeds_shepp_turner";
             }
             return "unknown";
         }
 
         // Get references to sub-controllers for advanced configuration
         inline Controller *get_follower() const { return follower_.get(); }
-        inline turners::ReedsShepp *get_reeds_shepp() const { return reeds_shepp_.get(); }
 
         // Set robot constraints
         inline void set_constraints(const RobotConstraints &constraints) { constraints_ = constraints; }
 
       private:
         std::unique_ptr<Controller> follower_;
-        std::unique_ptr<turners::ReedsShepp> reeds_shepp_;
 
         ControllerType active_type_;
         Controller *active_controller_;
