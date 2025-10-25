@@ -67,8 +67,16 @@ export(EXPORT ${project_name}Targets
 if(${project_name_upper}_BUILD_EXAMPLES)
   add_definitions(-DHAS_RERUN)
   set(RERUN_DOWNLOAD_AND_BUILD_ARROW OFF)
-  FetchContent_Declare(rerun_sdk URL https://github.com/rerun-io/rerun/releases/latest/download/rerun_cpp_sdk.zip)
-  FetchContent_MakeAvailable(rerun_sdk)
+  
+  option(USE_LOCAL "Use locally installed libraries instead of fetching" OFF)
+  
+  if(USE_LOCAL)
+    find_package(rerun_sdk REQUIRED PATHS $ENV{HOME}/.local/lib/cmake/rerun_sdk)
+  else()
+    FetchContent_Declare(rerun_sdk URL https://github.com/rerun-io/rerun/releases/latest/download/rerun_cpp_sdk.zip)
+    FetchContent_MakeAvailable(rerun_sdk)
+  endif()
+  
   list(APPEND ext_deps rerun_sdk)
 
   file(GLOB exe CONFIGURE_DEPENDS examples/*.cpp)
