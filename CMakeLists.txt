@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(project_name navcon)
+set(project_name consens)
 project(${project_name} VERSION 0.1.4 LANGUAGES CXX)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
@@ -76,8 +76,12 @@ if(${project_name_upper}_BUILD_EXAMPLES)
     FetchContent_Declare(rerun_sdk URL https://github.com/rerun-io/rerun/releases/latest/download/rerun_cpp_sdk.zip)
     FetchContent_MakeAvailable(rerun_sdk)
   endif()
-  
   list(APPEND ext_deps rerun_sdk)
+
+  FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog.git GIT_TAG v1.10.0)
+  FetchContent_MakeAvailable(spdlog)
+  
+  list(APPEND ext_deps spdlog)
 
   file(GLOB exe CONFIGURE_DEPENDS examples/*.cpp)
   # ----------------------------------------------
