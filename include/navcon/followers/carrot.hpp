@@ -30,17 +30,6 @@ namespace navcon {
                 double dx = goal.target_pose.point.x - current_state.pose.point.x;
                 double dy = goal.target_pose.point.y - current_state.pose.point.y;
                 double distance = std::sqrt(dx * dx + dy * dy);
-
-                // Skip if target is too close (within 2x turning radius) - unreachable
-                double min_target_distance = 2.0 * constraints.min_turning_radius;
-                if (distance < min_target_distance) {
-                    cmd.valid = true;
-                    cmd.status_message = "Target too close, skipping";
-                    status_.goal_reached = true;
-                    status_.mode = "skipped";
-                    return cmd;
-                }
-
                 double heading_error = this->calculate_heading_error(current_state.pose, goal.target_pose.point);
 
                 // Update status
