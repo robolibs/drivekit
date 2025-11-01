@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(project_name consens)
+set(project_name navcon)
 project(${project_name} VERSION 0.1.5 LANGUAGES CXX)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
