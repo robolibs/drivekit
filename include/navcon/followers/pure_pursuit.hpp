@@ -24,7 +24,7 @@ namespace navcon {
                 bool has_path = !path_.waypoints.empty();
 
                 if (has_path) {
-                    auto lookahead_result = find_lookahead_point(current_state.pose);
+                    auto lookahead_result = find_lookahead_point(current_state.pose, constraints);
                     if (!lookahead_result.has_value()) {
                         // Reached end of path
                         target_point = goal.target_pose.point;
@@ -91,16 +91,20 @@ namespace navcon {
             inline std::string get_type() const override { return "pure_pursuit_follower"; }
 
           private:
-            inline std::optional<Point> find_lookahead_point(const Pose &current_pose) {
+            inline std::optional<Point> find_lookahead_point(const Pose &current_pose,
+                                                             const RobotConstraints &constraints) {
                 if (path_.waypoints.empty()) return std::nullopt;
 
                 // FIXED waypoint progression: advance when close OR when we've passed the waypoint
                 // This prevents the robot from getting stuck targeting the first waypoint
+                double min_waypoint_distance = 2.0 * constraints.min_turning_radius;
+
                 while (path_index_ < path_.waypoints.size() - 1) {
                     Point current_waypoint = path_.waypoints[path_index_].point;
                     Point next_waypoint = path_.waypoints[path_index_ + 1].point;
 
                     double dist_to_current = current_pose.point.distance_to(current_waypoint);
+                    double dist_to_next = current_pose.point.distance_to(next_waypoint);
 
                     // Check if we've passed the waypoint by looking at the dot product
                     double dx_to_current = current_waypoint.x - current_pose.point.x;
@@ -111,8 +115,11 @@ namespace navcon {
                     // If dot product is negative, we've passed the waypoint
                     double dot_product = dx_to_current * dx_to_next + dy_to_current * dy_to_next;
 
-                    // Advance if: close to waypoint OR passed it OR too far away (stuck)
+                    // Advance if: close to waypoint OR passed it OR too far away (stuck) OR next point too close
                     if (dist_to_current < 2.0 || dot_product < 0 || dist_to_current > 15.0) {
+                        path_index_++;
+                    } else if (dist_to_next < min_waypoint_distance && path_index_ < path_.waypoints.size() - 2) {
+                        // Skip next waypoint if it's too close (unreachable due to turning radius)
                         path_index_++;
                     } else {
                         break;
