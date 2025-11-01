@@ -433,23 +433,6 @@ namespace navcon {
                 current_waypoint_index++;
                 std::cout << ", now " << current_waypoint_index << std::endl;
 
-                // Skip waypoints that are too close (unreachable due to turning radius)
-                double min_waypoint_distance = 2.0 * constraints_.min_turning_radius;
-                while (current_waypoint_index < current_path->waypoints.size()) {
-                    const concord::Point &next_target = current_path->waypoints[current_waypoint_index];
-                    float dist_to_next =
-                        std::sqrt(std::pow(next_target.x - robot_pos.x, 2) + std::pow(next_target.y - robot_pos.y, 2));
-
-                    if (dist_to_next < min_waypoint_distance &&
-                        current_waypoint_index < current_path->waypoints.size() - 1) {
-                        std::cout << "Skipping waypoint " << current_waypoint_index << " - too close (" << dist_to_next
-                                  << "m < " << min_waypoint_distance << "m)" << std::endl;
-                        current_waypoint_index++;
-                    } else {
-                        break;
-                    }
-                }
-
                 // Check if we've completed the path
                 if (current_waypoint_index >= current_path->waypoints.size()) {
                     if (current_path->loop && !current_path->waypoints.empty()) {
