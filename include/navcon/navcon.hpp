@@ -1,16 +1,16 @@
 #pragma once
 
-#include "navcon/controller.hpp"
-#include "navcon/path_controller.hpp"
-#include "navcon/factory.hpp"
 #include "concord/concord.hpp"
+#include "navcon/controller.hpp"
+#include "navcon/factory.hpp"
+#include "navcon/path_controller.hpp"
 #include "rerun.hpp"
-#include <memory>
-#include <vector>
-#include <optional>
+#include <cmath>
 #include <iostream>
 #include <limits>
-#include <cmath>
+#include <memory>
+#include <optional>
+#include <vector>
 
 namespace navcon {
 
@@ -43,7 +43,7 @@ namespace navcon {
     class Navcon {
       private:
         NavconControllerType controller_type;
-        std::unique_ptr<Controller> controller; // Simple controller or PathController
+        std::unique_ptr<Controller> controller;          // Simple controller or PathController
         std::unique_ptr<PathController> path_controller; // Advanced path controller
 
         // Current navigation state
@@ -55,10 +55,10 @@ namespace navcon {
 
         // Robot constraints (set during initialization)
         RobotConstraints constraints_;
-        
+
         // Recording stream for visualization
         std::shared_ptr<rerun::RecordingStream> rec;
-        
+
         // Current robot state (updated in tick)
         mutable RobotState current_state_;
 
@@ -78,10 +78,10 @@ namespace navcon {
 
             // Carrot parameters
             float carrot_distance = 1.0f;
-            
+
             // Path controller parameters
-            float sharp_turn_threshold = 60.0f; // degrees
-            float u_turn_threshold = 120.0f;    // degrees
+            float sharp_turn_threshold = 60.0f;   // degrees
+            float u_turn_threshold = 120.0f;      // degrees
             float path_lookahead_distance = 5.0f; // meters
         } params;
 
@@ -98,8 +98,8 @@ namespace navcon {
 
         // Goal management
         void set_goal(const NavigationGoal &goal) {
-            std::cout << "Navcon: Setting goal to (" << goal.target.x << ", " << goal.target.y
-                      << ") with tolerance " << goal.tolerance << std::endl;
+            std::cout << "Navcon: Setting goal to (" << goal.target.x << ", " << goal.target.y << ") with tolerance "
+                      << goal.tolerance << std::endl;
             current_goal = goal;
             current_path.reset();
             goal_reached = false;
@@ -122,7 +122,7 @@ namespace navcon {
                 navcon_path.waypoints.push_back(wp);
             }
             navcon_path.is_closed = path.loop; // Set loop behavior
-            
+
             if (controller) {
                 controller->set_path(navcon_path);
             }
@@ -190,7 +190,7 @@ namespace navcon {
 
             return cmd;
         }
-        
+
         // Status
         bool is_goal_reached() const { return goal_reached; }
         bool is_path_completed() const { return path_completed; }
@@ -239,22 +239,22 @@ namespace navcon {
 
             float interval_m = interval_cm / 100.0f; // Convert cm to meters
             std::vector<concord::Point> smoothed_waypoints;
-            
+
             // Always keep the first waypoint
             smoothed_waypoints.push_back(current_path->waypoints[0]);
 
             for (size_t i = 0; i < current_path->waypoints.size() - 1; ++i) {
-                const auto& start = current_path->waypoints[i];
-                const auto& end = current_path->waypoints[i + 1];
-                
+                const auto &start = current_path->waypoints[i];
+                const auto &end = current_path->waypoints[i + 1];
+
                 // Calculate distance between waypoints
                 float dx = end.x - start.x;
                 float dy = end.y - start.y;
                 float distance = std::sqrt(dx * dx + dy * dy);
-                
+
                 // Calculate number of segments needed
                 int num_segments = static_cast<int>(std::ceil(distance / interval_m));
-                
+
                 // Add interpolated points (skip the first one as it's already added)
                 for (int j = 1; j < num_segments; ++j) {
                     float t = static_cast<float>(j) / num_segments;
@@ -263,7 +263,7 @@ namespace navcon {
                     interpolated.y = start.y + t * dy;
                     smoothed_waypoints.push_back(interpolated);
                 }
-                
+
                 // Add the end waypoint
                 smoothed_waypoints.push_back(end);
             }
@@ -271,9 +271,9 @@ namespace navcon {
             // Update the current path with smoothed waypoints
             current_path->waypoints = smoothed_waypoints;
             current_waypoint_index = 0; // Reset to start
-            
-            std::cout << "Path smoothened: " << smoothed_waypoints.size() << " waypoints (interval: " 
-                      << interval_cm << "cm)" << std::endl;
+
+            std::cout << "Path smoothened: " << smoothed_waypoints.size() << " waypoints (interval: " << interval_cm
+                      << "cm)" << std::endl;
 
             // Update the path in controllers
             Path navcon_path;
@@ -284,7 +284,7 @@ namespace navcon {
                 navcon_path.waypoints.push_back(wp);
             }
             navcon_path.is_closed = current_path->loop;
-            
+
             if (controller) {
                 controller->set_path(navcon_path);
             }
@@ -294,19 +294,19 @@ namespace navcon {
         }
 
         // Direct access to path controller for advanced usage
-        PathController* get_path_controller() { return path_controller.get(); }
-        const PathController* get_path_controller() const { return path_controller.get(); }
+        PathController *get_path_controller() { return path_controller.get(); }
+        const PathController *get_path_controller() const { return path_controller.get(); }
 
         // Direct access to simple controller
-        Controller* get_controller() { return controller.get(); }
-        const Controller* get_controller() const { return controller.get(); }
+        Controller *get_controller() { return controller.get(); }
+        const Controller *get_controller() const { return controller.get(); }
 
         // Visualization
         void tock() const {
             if (!rec) {
                 return;
             }
-            
+
             // Visualize current path
             if (current_path.has_value() && !current_path->waypoints.empty()) {
                 // Convert waypoints to 3D coordinates for visualization
@@ -318,33 +318,32 @@ namespace navcon {
                 // Draw the planned path as a green line
                 if (path_points.size() >= 2) {
                     auto path_line = rerun::components::LineStrip3D(path_points);
-                    rec->log_static("navigation/planned_path",
-                                    rerun::LineStrips3D(path_line)
-                                        .with_colors({{0, 255, 0}}) // Green for planned path
-                                        .with_radii({{0.0375f}}));
+                    rec->log_static("navigation/planned_path", rerun::LineStrips3D(path_line)
+                                                                   .with_colors({{0, 255, 0}}) // Green for planned path
+                                                                   .with_radii({{0.0375f}}));
                 }
 
                 // Visualize individual waypoints as green spheres
                 std::vector<rerun::components::Position3D> waypoint_positions;
                 for (const auto &waypoint : current_path->waypoints) {
-                    waypoint_positions.push_back({static_cast<float>(waypoint.x), static_cast<float>(waypoint.y), 0.3f});
+                    waypoint_positions.push_back(
+                        {static_cast<float>(waypoint.x), static_cast<float>(waypoint.y), 0.3f});
                 }
 
                 if (!waypoint_positions.empty()) {
-                    rec->log_static("navigation/waypoints",
-                                    rerun::Points3D(waypoint_positions)
-                                        .with_colors({{0, 255, 0}}) // Green waypoints
-                                        .with_radii({{0.1f}}));
+                    rec->log_static("navigation/waypoints", rerun::Points3D(waypoint_positions)
+                                                                .with_colors({{0, 255, 0}}) // Green waypoints
+                                                                .with_radii({{0.1f}}));
                 }
 
                 // Highlight current target waypoint in yellow
                 if (current_waypoint_index < current_path->waypoints.size()) {
                     const auto &current_target = current_path->waypoints[current_waypoint_index];
-                    rec->log_static(
-                        "navigation/current_target",
-                        rerun::Points3D({{static_cast<float>(current_target.x), static_cast<float>(current_target.y), 0.4f}})
-                            .with_colors({{255, 255, 0}}) // Yellow for current target
-                            .with_radii({{0.15f}}));
+                    rec->log_static("navigation/current_target",
+                                    rerun::Points3D({{static_cast<float>(current_target.x),
+                                                      static_cast<float>(current_target.y), 0.4f}})
+                                        .with_colors({{255, 255, 0}}) // Yellow for current target
+                                        .with_radii({{0.15f}}));
                 }
             }
 
@@ -381,14 +380,14 @@ namespace navcon {
             auto target = get_current_target();
             if (target.x != 0 || target.y != 0) {
                 std::vector<std::array<float, 3>> direction_line = {
-                    {static_cast<float>(current_state_.pose.point.x), static_cast<float>(current_state_.pose.point.y), 0.2f},
+                    {static_cast<float>(current_state_.pose.point.x), static_cast<float>(current_state_.pose.point.y),
+                     0.2f},
                     {static_cast<float>(target.x), static_cast<float>(target.y), 0.2f}};
 
                 auto direction_strip = rerun::components::LineStrip3D(direction_line);
-                rec->log_static("navigation/direction",
-                                rerun::LineStrips3D(direction_strip)
-                                    .with_colors({{255, 165, 0}}) // Orange for direction
-                                    .with_radii({{0.025f}}));
+                rec->log_static("navigation/direction", rerun::LineStrips3D(direction_strip)
+                                                            .with_colors({{255, 165, 0}}) // Orange for direction
+                                                            .with_radii({{0.025f}}));
             }
         }
 
@@ -417,7 +416,8 @@ namespace navcon {
             // Calculate distance directly using current state
             const concord::Point &robot_pos = current_state.pose.point;
             const concord::Point &current_target = current_path->waypoints[current_waypoint_index];
-            float distance = std::sqrt(std::pow(current_target.x - robot_pos.x, 2) + std::pow(current_target.y - robot_pos.y, 2));
+            float distance =
+                std::sqrt(std::pow(current_target.x - robot_pos.x, 2) + std::pow(current_target.y - robot_pos.y, 2));
 
             // Debug waypoint progression
             static int waypoint_debug_count = 0;
@@ -432,6 +432,23 @@ namespace navcon {
                 std::cout << "WAYPOINT REACHED! Moving to next waypoint. Index was " << current_waypoint_index;
                 current_waypoint_index++;
                 std::cout << ", now " << current_waypoint_index << std::endl;
+
+                // Skip waypoints that are too close (unreachable due to turning radius)
+                double min_waypoint_distance = 2.0 * constraints_.min_turning_radius;
+                while (current_waypoint_index < current_path->waypoints.size()) {
+                    const concord::Point &next_target = current_path->waypoints[current_waypoint_index];
+                    float dist_to_next =
+                        std::sqrt(std::pow(next_target.x - robot_pos.x, 2) + std::pow(next_target.y - robot_pos.y, 2));
+
+                    if (dist_to_next < min_waypoint_distance &&
+                        current_waypoint_index < current_path->waypoints.size() - 1) {
+                        std::cout << "Skipping waypoint " << current_waypoint_index << " - too close (" << dist_to_next
+                                  << "m < " << min_waypoint_distance << "m)" << std::endl;
+                        current_waypoint_index++;
+                    } else {
+                        break;
+                    }
+                }
 
                 // Check if we've completed the path
                 if (current_waypoint_index >= current_path->waypoints.size()) {
@@ -488,18 +505,18 @@ namespace navcon {
                 std::cout << "Creating Path controller..." << std::endl;
                 path_controller = std::make_unique<PathController>(PathController::FollowerType::PURE_PURSUIT);
                 controller.reset();
-                
+
                 // Configure path controller
                 path_controller->set_sharp_turn_threshold(params.sharp_turn_threshold);
                 path_controller->set_u_turn_threshold(params.u_turn_threshold);
                 path_controller->set_lookahead_distance(params.path_lookahead_distance);
-                
+
                 config.goal_tolerance = 0.5f;
                 config.angular_tolerance = 0.1f;
                 config.kp_linear = params.linear_kp;
                 config.kp_angular = params.angular_kp;
                 path_controller->set_config(config);
-                
+
                 std::cout << "Path controller created: success" << std::endl;
                 break;
             }
