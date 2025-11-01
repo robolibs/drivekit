@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.6] - 2025-11-01
+
+### <!-- 2 -->🚜 Refactor
+
+- Refactor: Remove `navcon::factory` and update includes
+
 ## [0.1.5] - 2025-11-01
 
 ### <!-- 0 -->⛰️  Features
