@@ -4,14 +4,15 @@
 #include <thread>
 
 int main() {
-    // 1. Create a navigation controller (using PID controller)
-    navcon::Navcon navigator(navcon::NavconControllerType::PID);
-
-    // 2. Set up robot constraints
+    // 1. Set up robot constraints
     navcon::RobotConstraints constraints;
     constraints.max_linear_velocity = 1.0;  // 1 m/s max speed
     constraints.max_angular_velocity = 1.0; // 1 rad/s max turn rate
     constraints.wheelbase = 0.5;            // 0.5m wheelbase
+    constraints.min_turning_radius = 0.5f;  // 0.5m minimum turning radius
+
+    // 2. Create a navigation controller (using PID controller)
+    navcon::Navcon navigator(navcon::NavconControllerType::PID, constraints.min_turning_radius);
 
     // 3. Initialize (without visualization for simplicity)
     navigator.init(constraints, nullptr);

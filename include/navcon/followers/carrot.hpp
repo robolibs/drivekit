@@ -13,6 +13,8 @@ namespace navcon {
             using Base::config_;
             using Base::status_;
 
+            inline CarrotFollower(double min_turning_radius = 1.0) : min_turning_radius_(min_turning_radius) {}
+
             inline VelocityCommand compute_control(const RobotState &current_state, const Goal &goal,
                                                    const RobotConstraints &constraints, double dt) override {
                 VelocityCommand cmd;
@@ -62,6 +64,9 @@ namespace navcon {
             }
 
             inline std::string get_type() const override { return "carrot_follower"; }
+
+          private:
+            double min_turning_radius_ = 1.0;
         };
 
     } // namespace followers

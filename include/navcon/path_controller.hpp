@@ -19,7 +19,7 @@ namespace navcon {
             // Create the follower
             switch (follower_type) {
             case FollowerType::PURE_PURSUIT:
-                follower_ = std::make_unique<followers::PurePursuitFollower>();
+                follower_ = std::make_unique<followers::PurePursuitFollower>(min_turning_radius);
                 break;
             }
 

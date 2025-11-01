@@ -2,7 +2,9 @@
 
 #include "concord/concord.hpp"
 #include "navcon/controller.hpp"
-#include "navcon/factory.hpp"
+#include "navcon/followers/carrot.hpp"
+#include "navcon/followers/pid.hpp"
+#include "navcon/followers/pure_pursuit.hpp"
 #include "navcon/path_controller.hpp"
 #include "rerun.hpp"
 #include <cmath>
@@ -56,6 +58,9 @@ namespace navcon {
         // Robot constraints (set during initialization)
         RobotConstraints constraints_;
 
+        // Minimum turning radius (meters)
+        float min_turning_radius_;
+
         // Recording stream for visualization
         std::shared_ptr<rerun::RecordingStream> rec;
 
@@ -89,13 +94,15 @@ namespace navcon {
         } params;
 
       public:
-        Navcon(NavconControllerType type = NavconControllerType::PID) : controller_type(type) {}
+        Navcon(NavconControllerType type = NavconControllerType::PID, float min_turning_radius = 1.0f)
+            : controller_type(type), min_turning_radius_(min_turning_radius) {}
         ~Navcon() = default;
 
         // Initialize with robot constraints and recording stream
         void init(const RobotConstraints &robot_constraints, std::shared_ptr<rerun::RecordingStream> recording_stream,
                   const std::string &prefix = "navigation") {
             constraints_ = robot_constraints;
+            constraints_.min_turning_radius = min_turning_radius_;
             rec = recording_stream;
             entity_prefix = prefix;
             create_controller();
@@ -118,15 +125,21 @@ namespace navcon {
             goal_reached = false;
             path_completed = false;
 
+            // Filter waypoints based on minimum turning radius
+            std::vector<concord::Point> filtered_waypoints = filter_waypoints_by_turning_radius(path.waypoints);
+
+            // Update current_path with filtered waypoints
+            current_path->waypoints = filtered_waypoints;
+
             // Convert PathGoal to navcon::Path and set it in the controller
             Path navcon_path;
-            for (const auto &waypoint : path.waypoints) {
+            for (const auto &waypoint : filtered_waypoints) {
                 Pose wp;
                 wp.point = waypoint;
-                wp.angle = concord::Euler{0.0f, 0.0f, 0.0f}; // No specific heading required
+                wp.angle = concord::Euler{0.0f, 0.0f, 0.0f};
                 navcon_path.waypoints.push_back(wp);
             }
-            navcon_path.is_closed = path.loop; // Set loop behavior
+            navcon_path.is_closed = path.loop;
 
             if (controller) {
                 controller->set_path(navcon_path);
@@ -323,9 +336,10 @@ namespace navcon {
                 // Draw the planned path as a green line
                 if (path_points.size() >= 2) {
                     auto path_line = rerun::components::LineStrip3D(path_points);
-                    rec->log_static(entity_prefix + "/planned_path", rerun::LineStrips3D(path_line)
-                                                                   .with_colors({{0, 255, 0}}) // Green for planned path
-                                                                   .with_radii({{0.0375f}}));
+                    rec->log_static(entity_prefix + "/planned_path",
+                                    rerun::LineStrips3D(path_line)
+                                        .with_colors({{0, 255, 0}}) // Green for planned path
+                                        .with_radii({{0.0375f}}));
                 }
 
                 // Visualize individual waypoints as green spheres
@@ -337,8 +351,8 @@ namespace navcon {
 
                 if (!waypoint_positions.empty()) {
                     rec->log_static(entity_prefix + "/waypoints", rerun::Points3D(waypoint_positions)
-                                                                .with_colors({{0, 255, 0}}) // Green waypoints
-                                                                .with_radii({{0.1f}}));
+                                                                      .with_colors({{0, 255, 0}}) // Green waypoints
+                                                                      .with_radii({{0.1f}}));
                 }
 
                 // Highlight current target waypoint in yellow
@@ -391,13 +405,53 @@ namespace navcon {
 
                 auto direction_strip = rerun::components::LineStrip3D(direction_line);
                 rec->log_static(entity_prefix + "/direction", rerun::LineStrips3D(direction_strip)
-                                                            .with_colors({{255, 165, 0}}) // Orange for direction
-                                                            .with_radii({{0.025f}}));
+                                                                  .with_colors({{255, 165, 0}}) // Orange for direction
+                                                                  .with_radii({{0.025f}}));
             }
         }
 
       private:
         // Internal helper methods
+        std::vector<concord::Point> filter_waypoints_by_turning_radius(const std::vector<concord::Point> &waypoints) {
+            if (waypoints.size() < 2) {
+                return waypoints;
+            }
+
+            std::vector<concord::Point> filtered;
+            filtered.push_back(waypoints[0]);
+
+            float min_distance_threshold = 3.0f * min_turning_radius_;
+            size_t skipped_count = 0;
+
+            for (size_t i = 1; i < waypoints.size() - 1; ++i) {
+                const auto &prev = filtered.back();
+                const auto &current = waypoints[i];
+
+                float dx = current.x - prev.x;
+                float dy = current.y - prev.y;
+                float distance = std::sqrt(dx * dx + dy * dy);
+
+                if (distance >= min_distance_threshold) {
+                    filtered.push_back(current);
+                } else {
+                    skipped_count++;
+                    std::cout << "Navcon: Skipping waypoint " << i << " at (" << current.x << ", " << current.y
+                              << ") - too close (" << distance << "m < " << min_distance_threshold
+                              << "m threshold based on turning radius " << min_turning_radius_ << "m)" << std::endl;
+                }
+            }
+
+            filtered.push_back(waypoints.back());
+
+            if (skipped_count > 0) {
+                std::cout << "Navcon: Filtered path from " << waypoints.size() << " to " << filtered.size()
+                          << " waypoints (skipped " << skipped_count << " waypoints based on min turning radius "
+                          << min_turning_radius_ << "m)" << std::endl;
+            }
+
+            return filtered;
+        }
+
         Goal get_current_navcon_goal() const {
             Goal goal;
 
@@ -455,43 +509,42 @@ namespace navcon {
             switch (controller_type) {
             case NavconControllerType::PID:
                 std::cout << "Creating PID controller..." << std::endl;
+                controller = std::make_unique<followers::PIDFollower>(min_turning_radius_);
                 config.kp_linear = params.linear_kp;
                 config.ki_linear = params.linear_ki;
                 config.kd_linear = params.linear_kd;
                 config.kp_angular = params.angular_kp;
                 config.ki_angular = params.angular_ki;
                 config.kd_angular = params.angular_kd;
-                controller = navcon::create_controller("pid", config);
+                controller->set_config(config);
                 path_controller.reset();
-                std::cout << "PID controller created: " << (controller ? "success" : "failed") << std::endl;
+                std::cout << "PID controller created: success" << std::endl;
                 break;
 
             case NavconControllerType::PURE_PURSUIT:
                 std::cout << "Creating Pure Pursuit controller..." << std::endl;
+                controller = std::make_unique<followers::PurePursuitFollower>(min_turning_radius_);
                 config.lookahead_distance = params.lookahead_distance;
-                controller = navcon::create_controller("pure_pursuit", config);
+                controller->set_config(config);
                 path_controller.reset();
-                std::cout << "Pure Pursuit controller created: " << (controller ? "success" : "failed") << std::endl;
+                std::cout << "Pure Pursuit controller created: success" << std::endl;
                 break;
 
             case NavconControllerType::STANLEY:
-                std::cout << "Creating Stanley controller..." << std::endl;
-                config.k_cross_track = params.cross_track_gain;
-                config.k_heading = params.softening_gain;
-                controller = navcon::create_controller("stanley", config);
-                path_controller.reset();
-                std::cout << "Stanley controller created: " << (controller ? "success" : "failed") << std::endl;
+                std::cout << "Stanley controller not implemented yet" << std::endl;
                 break;
 
             case NavconControllerType::CARROT:
+                controller = std::make_unique<followers::CarrotFollower>(min_turning_radius_);
                 config.lookahead_distance = params.carrot_distance;
-                controller = navcon::create_controller("carrot", config);
+                controller->set_config(config);
                 path_controller.reset();
                 break;
 
             case NavconControllerType::PATH_CONTROLLER:
                 std::cout << "Creating Path controller..." << std::endl;
-                path_controller = std::make_unique<PathController>(PathController::FollowerType::PURE_PURSUIT);
+                path_controller =
+                    std::make_unique<PathController>(PathController::FollowerType::PURE_PURSUIT, min_turning_radius_);
                 controller.reset();
 
                 // Configure path controller

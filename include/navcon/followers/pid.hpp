@@ -13,7 +13,7 @@ namespace navcon {
             using Base::config_;
             using Base::status_;
 
-            inline PIDFollower() { reset(); }
+            inline PIDFollower(double min_turning_radius = 1.0) : min_turning_radius_(min_turning_radius) { reset(); }
 
             inline VelocityCommand compute_control(const RobotState &current_state, const Goal &goal,
                                                    const RobotConstraints &constraints, double dt) override {
@@ -100,6 +100,7 @@ namespace navcon {
             inline std::string get_type() const override { return "pid_follower"; }
 
           private:
+            double min_turning_radius_ = 1.0;
             double linear_integral_ = 0.0;
             double angular_integral_ = 0.0;
             double last_distance_error_ = 0.0;
