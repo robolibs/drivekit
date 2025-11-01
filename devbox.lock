@@ -205,6 +205,134 @@
       "last_modified": "2025-07-06T07:15:37Z",
       "resolved": "github:NixOS/nixpkgs/ceb24d94c6feaa4e8737a8e2bd3cf71c3a7eaaa0?lastModified=1751786137&narHash=sha256-lIlUKVGCGsh0Q2EA7%2F6xRtKUZjaQ%2Fur8uUyY%2BMynHXQ%3D"
     },
+    "rerun@latest": {
+      "last_modified": "2025-10-07T08:41:47Z",
+      "resolved": "github:NixOS/nixpkgs/bce5fe2bb998488d8e7e7856315f90496723793c#rerun",
+      "source": "devbox-search",
+      "version": "0.25.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/2fky9p3m9512jfi1qv29cgpc85vsfanm-rerun-0.25.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/2fky9p3m9512jfi1qv29cgpc85vsfanm-rerun-0.25.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/j7slprs1ppdaz1skwy19rswfdvz27wdz-rerun-0.25.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/j7slprs1ppdaz1skwy19rswfdvz27wdz-rerun-0.25.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/c23w7r3vczsgy9pr3jcyaygmqmvhl7gv-rerun-0.25.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/c23w7r3vczsgy9pr3jcyaygmqmvhl7gv-rerun-0.25.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/3lcv6pj1f5wjfc2ya5fd6q0h46vac781-rerun-0.25.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/3lcv6pj1f5wjfc2ya5fd6q0h46vac781-rerun-0.25.1"
+        }
+      }
+    },
+    "spdlog@latest": {
+      "last_modified": "2025-10-07T08:41:47Z",
+      "resolved": "github:NixOS/nixpkgs/bce5fe2bb998488d8e7e7856315f90496723793c#spdlog",
+      "source": "devbox-search",
+      "version": "1.15.3",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/40kqxzmd3nsb36sdp1pibiqnkxrbz3vc-spdlog-1.15.3",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/hwg9j16ryzwjanwhlyrvrflxx1p2mp8g-spdlog-1.15.3-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/xnk5dpr5aln4fzsxq1n0bbzi9iqr49z6-spdlog-1.15.3-doc"
+            }
+          ],
+          "store_path": "/nix/store/40kqxzmd3nsb36sdp1pibiqnkxrbz3vc-spdlog-1.15.3"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/1zkf55yvrqk85d6b5sxxlrkxv692g4r0-spdlog-1.15.3",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/d9g1ng634c682z2ylwkxx9iwcwsvmgfr-spdlog-1.15.3-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/km14n3zqfj6jsa7xpd5r1rk1v68pihdw-spdlog-1.15.3-doc"
+            }
+          ],
+          "store_path": "/nix/store/1zkf55yvrqk85d6b5sxxlrkxv692g4r0-spdlog-1.15.3"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/1pgc8243b8j9p60cq1f97vi531287gws-spdlog-1.15.3",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/z4hl94ch0mx0r8j5qx7v8s0y791vn8cb-spdlog-1.15.3-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/0369bgxnbrfmy2pkf3kvwvi9m6s6lr2y-spdlog-1.15.3-doc"
+            }
+          ],
+          "store_path": "/nix/store/1pgc8243b8j9p60cq1f97vi531287gws-spdlog-1.15.3"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zmhybj0xvz20gjsy03rq0gnpa26q8xnc-spdlog-1.15.3",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/w65w8pfl2d0iw9p1qfdqgv0bpn1q550z-spdlog-1.15.3-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/zdjdlnq51w5mnl6p0af3lfgh3ihj6193-spdlog-1.15.3-doc"
+            }
+          ],
+          "store_path": "/nix/store/zmhybj0xvz20gjsy03rq0gnpa26q8xnc-spdlog-1.15.3"
+        }
+      }
+    },
     "stdenv@latest": {
       "last_modified": "2023-02-24T09:01:09Z",
       "resolved": "github:NixOS/nixpkgs/7d0ed7f2e5aea07ab22ccb338d27fbe347ed2f11#stdenv",

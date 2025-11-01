@@ -12,6 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED On)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(params
     -Wno-reorder
+    -Wno-narrowing
+    -Wno-array-bounds
+    -Wno-unused-variable
+    -Wno-unused-parameter
+    -Wno-stringop-overflow
 )
 
 string(TOUPPER ${project_name} project_name_upper)
@@ -66,23 +71,13 @@ export(EXPORT ${project_name}Targets
 # --------------------------------------------------------------------------------------------------
 if(${project_name_upper}_BUILD_EXAMPLES)
   add_definitions(-DHAS_RERUN)
-  set(RERUN_DOWNLOAD_AND_BUILD_ARROW OFF)
-  
-  option(USE_LOCAL "Use locally installed libraries instead of fetching" OFF)
-  
-  if(USE_LOCAL)
-    find_package(rerun_sdk REQUIRED PATHS $ENV{HOME}/.local/lib/cmake/rerun_sdk)
-  else()
-    FetchContent_Declare(rerun_sdk URL https://github.com/rerun-io/rerun/releases/latest/download/rerun_cpp_sdk.zip)
-    FetchContent_MakeAvailable(rerun_sdk)
-  endif()
+  find_package(rerun_sdk REQUIRED)
   list(APPEND ext_deps rerun_sdk)
 
-  FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog.git GIT_TAG v1.10.0)
-  FetchContent_MakeAvailable(spdlog)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(spdlog REQUIRED IMPORTED_TARGET spdlog)
+  list(APPEND ext_deps PkgConfig::spdlog)
   
-  list(APPEND ext_deps spdlog)
-
   file(GLOB exe CONFIGURE_DEPENDS examples/*.cpp)
   # ----------------------------------------------
   set(exec_names)
@@ -93,6 +88,7 @@ if(${project_name_upper}_BUILD_EXAMPLES)
         target_compile_options(${exec_name} PRIVATE ${params})
         target_sources(${exec_name} PRIVATE "${lib_file}")
       endforeach()
+    target_compile_options(${exec_name} PRIVATE ${params} ${CURL_CFLAGS_OTHER})
     target_link_libraries(${exec_name} ${ext_deps})
     install(TARGETS ${exec_name} DESTINATION bin)
     list(APPEND exec_names ${exec_name})
