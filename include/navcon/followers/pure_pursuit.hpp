@@ -112,7 +112,7 @@ namespace navcon {
 
                     double dot_product = dx_to_current * dx_to_next + dy_to_current * dy_to_next;
 
-                    double min_waypoint_distance = 2.5 * min_turning_radius_;
+                    double min_waypoint_distance = 2.0 * min_turning_radius_;
 
                     if (dist_to_current < 2.0 || dot_product < 0 || dist_to_current > 15.0) {
                         path_index_++;

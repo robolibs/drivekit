@@ -64,6 +64,9 @@ namespace navcon {
         // Recording stream for visualization
         std::shared_ptr<rerun::RecordingStream> rec;
 
+        // Entity prefix for visualization namespace
+        std::string entity_prefix_;
+
         // Current robot state (updated in tick)
         mutable RobotState current_state_;
 
@@ -91,8 +94,10 @@ namespace navcon {
         } params;
 
       public:
-        Navcon(NavconControllerType type = NavconControllerType::PID, float min_turning_radius = 1.0f)
-            : controller_type(type), min_turning_radius_(min_turning_radius) {}
+        Navcon(float min_turning_radius, NavconControllerType type = NavconControllerType::PID,
+               const std::string &namespace_prefix = "")
+            : min_turning_radius_(min_turning_radius), controller_type(type),
+              entity_prefix_(namespace_prefix.empty() ? "navigation" : namespace_prefix) {}
         ~Navcon() = default;
 
         // Initialize with robot constraints and recording stream
@@ -331,9 +336,10 @@ namespace navcon {
                 // Draw the planned path as a green line
                 if (path_points.size() >= 2) {
                     auto path_line = rerun::components::LineStrip3D(path_points);
-                    rec->log_static("navigation/planned_path", rerun::LineStrips3D(path_line)
-                                                                   .with_colors({{0, 255, 0}}) // Green for planned path
-                                                                   .with_radii({{0.0375f}}));
+                    rec->log_static(entity_prefix_ + "/planned_path",
+                                    rerun::LineStrips3D(path_line)
+                                        .with_colors({{0, 255, 0}}) // Green for planned path
+                                        .with_radii({{0.0375f}}));
                 }
 
                 // Visualize individual waypoints as green spheres
@@ -344,7 +350,7 @@ namespace navcon {
                 }
 
                 if (!waypoint_positions.empty()) {
-                    rec->log_static("navigation/waypoints", rerun::Points3D(waypoint_positions)
+                    rec->log_static(entity_prefix_ + "/waypoints", rerun::Points3D(waypoint_positions)
                                                                 .with_colors({{0, 255, 0}}) // Green waypoints
                                                                 .with_radii({{0.1f}}));
                 }
@@ -352,7 +358,7 @@ namespace navcon {
                 // Highlight current target waypoint in yellow
                 if (current_waypoint_index < current_path->waypoints.size()) {
                     const auto &current_target = current_path->waypoints[current_waypoint_index];
-                    rec->log_static("navigation/current_target",
+                    rec->log_static(entity_prefix_ + "/current_target",
                                     rerun::Points3D({{static_cast<float>(current_target.x),
                                                       static_cast<float>(current_target.y), 0.4f}})
                                         .with_colors({{255, 255, 0}}) // Yellow for current target
@@ -365,7 +371,7 @@ namespace navcon {
                 const auto &target = current_goal->target;
 
                 // Visualize goal point as a red sphere
-                rec->log_static("navigation/goal",
+                rec->log_static(entity_prefix_ + "/goal",
                                 rerun::Points3D({{static_cast<float>(target.x), static_cast<float>(target.y), 0.3f}})
                                     .with_colors({{255, 0, 0}}) // Red for goal
                                     .with_radii({{0.125f}}));
@@ -382,7 +388,7 @@ namespace navcon {
 
                 if (!tolerance_circle.empty()) {
                     auto tolerance_line = rerun::components::LineStrip3D(tolerance_circle);
-                    rec->log_static("navigation/goal_tolerance",
+                    rec->log_static(entity_prefix_ + "/goal_tolerance",
                                     rerun::LineStrips3D(tolerance_line)
                                         .with_colors({{255, 0, 0, 128}}) // Semi-transparent red
                                         .with_radii({{0.02f}}));
@@ -398,7 +404,7 @@ namespace navcon {
                     {static_cast<float>(target.x), static_cast<float>(target.y), 0.2f}};
 
                 auto direction_strip = rerun::components::LineStrip3D(direction_line);
-                rec->log_static("navigation/direction", rerun::LineStrips3D(direction_strip)
+                rec->log_static(entity_prefix_ + "/direction", rerun::LineStrips3D(direction_strip)
                                                             .with_colors({{255, 165, 0}}) // Orange for direction
                                                             .with_radii({{0.025f}}));
             }

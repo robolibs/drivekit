@@ -12,7 +12,8 @@ int main() {
     constraints.min_turning_radius = 0.5f;  // 0.5m minimum turning radius
 
     // 2. Create a navigation controller (using PID controller)
-    navcon::Navcon navigator(navcon::NavconControllerType::PID, constraints.min_turning_radius);
+    // min_turning_radius is MANDATORY, controller type is optional (defaults to PID)
+    navcon::Navcon navigator(constraints.min_turning_radius, navcon::NavconControllerType::PID);
 
     // 3. Initialize (without visualization for simplicity)
     navigator.init(constraints, nullptr);
