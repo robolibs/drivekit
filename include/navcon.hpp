@@ -94,16 +94,15 @@ namespace navcon {
         } params;
 
       public:
-        Navcon(float min_turning_radius, NavconControllerType type = NavconControllerType::PID,
-               const std::string &namespace_prefix = "")
-            : min_turning_radius_(min_turning_radius), controller_type(type),
-              entity_prefix(namespace_prefix.empty() ? "navigation" : namespace_prefix) {}
+        Navcon(NavconControllerType type = NavconControllerType::PID, const std::string &namespace_prefix = "")
+            : controller_type(type), entity_prefix(namespace_prefix.empty() ? "navigation" : namespace_prefix),
+              min_turning_radius_(0.0f) {}
         ~Navcon() = default;
 
         // Initialize with robot constraints and recording stream
         void init(const RobotConstraints &robot_constraints, std::shared_ptr<rerun::RecordingStream> recording_stream) {
             constraints_ = robot_constraints;
-            constraints_.min_turning_radius = min_turning_radius_;
+            min_turning_radius_ = constraints_.min_turning_radius;
             rec = recording_stream;
             create_controller();
         }

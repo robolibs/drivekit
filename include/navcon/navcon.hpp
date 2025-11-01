@@ -94,16 +94,15 @@ namespace navcon {
         } params;
 
       public:
-        Navcon(float min_turning_radius, NavconControllerType type = NavconControllerType::PID,
-               const std::string &namespace_prefix = "")
-            : min_turning_radius_(min_turning_radius), controller_type(type),
-              entity_prefix_(namespace_prefix.empty() ? "navigation" : namespace_prefix) {}
+        Navcon(NavconControllerType type = NavconControllerType::PID, const std::string &namespace_prefix = "")
+            : controller_type(type), entity_prefix_(namespace_prefix.empty() ? "navigation" : namespace_prefix),
+              min_turning_radius_(0.0f) {}
         ~Navcon() = default;
 
         // Initialize with robot constraints and recording stream
         void init(const RobotConstraints &robot_constraints, std::shared_ptr<rerun::RecordingStream> recording_stream) {
             constraints_ = robot_constraints;
-            constraints_.min_turning_radius = min_turning_radius_;
+            min_turning_radius_ = constraints_.min_turning_radius;
             rec = recording_stream;
             create_controller();
         }
@@ -351,8 +350,8 @@ namespace navcon {
 
                 if (!waypoint_positions.empty()) {
                     rec->log_static(entity_prefix_ + "/waypoints", rerun::Points3D(waypoint_positions)
-                                                                .with_colors({{0, 255, 0}}) // Green waypoints
-                                                                .with_radii({{0.1f}}));
+                                                                       .with_colors({{0, 255, 0}}) // Green waypoints
+                                                                       .with_radii({{0.1f}}));
                 }
 
                 // Highlight current target waypoint in yellow
@@ -405,8 +404,8 @@ namespace navcon {
 
                 auto direction_strip = rerun::components::LineStrip3D(direction_line);
                 rec->log_static(entity_prefix_ + "/direction", rerun::LineStrips3D(direction_strip)
-                                                            .with_colors({{255, 165, 0}}) // Orange for direction
-                                                            .with_radii({{0.025f}}));
+                                                                   .with_colors({{255, 165, 0}}) // Orange for direction
+                                                                   .with_radii({{0.025f}}));
             }
         }
 
