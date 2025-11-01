@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.5] - 2025-11-01
+
+### <!-- 0 -->⛰️  Features
+
+- Refactor `navcon` for modular control and visualization
+- Rename project, add logging, and new example
+
+### <!-- 7 -->⚙️ Miscellaneous Tasks
+
+- Refactor config targets to use local dependencies
+
 ## [0.1.3] - 2025-10-25
 
 ### <!-- 2 -->🚜 Refactor
