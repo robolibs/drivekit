@@ -2,7 +2,9 @@
 
 #include "concord/concord.hpp"
 #include "navcon/controller.hpp"
-#include "navcon/factory.hpp"
+#include "navcon/followers/carrot.hpp"
+#include "navcon/followers/pid.hpp"
+#include "navcon/followers/pure_pursuit.hpp"
 #include "navcon/path_controller.hpp"
 #include "rerun.hpp"
 #include <cmath>
@@ -323,9 +325,10 @@ namespace navcon {
                 // Draw the planned path as a green line
                 if (path_points.size() >= 2) {
                     auto path_line = rerun::components::LineStrip3D(path_points);
-                    rec->log_static(entity_prefix + "/planned_path", rerun::LineStrips3D(path_line)
-                                                                   .with_colors({{0, 255, 0}}) // Green for planned path
-                                                                   .with_radii({{0.0375f}}));
+                    rec->log_static(entity_prefix + "/planned_path",
+                                    rerun::LineStrips3D(path_line)
+                                        .with_colors({{0, 255, 0}}) // Green for planned path
+                                        .with_radii({{0.0375f}}));
                 }
 
                 // Visualize individual waypoints as green spheres
@@ -337,8 +340,8 @@ namespace navcon {
 
                 if (!waypoint_positions.empty()) {
                     rec->log_static(entity_prefix + "/waypoints", rerun::Points3D(waypoint_positions)
-                                                                .with_colors({{0, 255, 0}}) // Green waypoints
-                                                                .with_radii({{0.1f}}));
+                                                                      .with_colors({{0, 255, 0}}) // Green waypoints
+                                                                      .with_radii({{0.1f}}));
                 }
 
                 // Highlight current target waypoint in yellow
@@ -391,8 +394,8 @@ namespace navcon {
 
                 auto direction_strip = rerun::components::LineStrip3D(direction_line);
                 rec->log_static(entity_prefix + "/direction", rerun::LineStrips3D(direction_strip)
-                                                            .with_colors({{255, 165, 0}}) // Orange for direction
-                                                            .with_radii({{0.025f}}));
+                                                                  .with_colors({{255, 165, 0}}) // Orange for direction
+                                                                  .with_radii({{0.025f}}));
             }
         }
 
@@ -461,7 +464,8 @@ namespace navcon {
                 config.kp_angular = params.angular_kp;
                 config.ki_angular = params.angular_ki;
                 config.kd_angular = params.angular_kd;
-                controller = navcon::create_controller("pid", config);
+                controller = std::make_unique<followers::PIDFollower>();
+                controller->set_config(config);
                 path_controller.reset();
                 std::cout << "PID controller created: " << (controller ? "success" : "failed") << std::endl;
                 break;
@@ -469,7 +473,8 @@ namespace navcon {
             case NavconControllerType::PURE_PURSUIT:
                 std::cout << "Creating Pure Pursuit controller..." << std::endl;
                 config.lookahead_distance = params.lookahead_distance;
-                controller = navcon::create_controller("pure_pursuit", config);
+                controller = std::make_unique<followers::PurePursuitFollower>();
+                controller->set_config(config);
                 path_controller.reset();
                 std::cout << "Pure Pursuit controller created: " << (controller ? "success" : "failed") << std::endl;
                 break;
@@ -478,14 +483,16 @@ namespace navcon {
                 std::cout << "Creating Stanley controller..." << std::endl;
                 config.k_cross_track = params.cross_track_gain;
                 config.k_heading = params.softening_gain;
-                controller = navcon::create_controller("stanley", config);
+                controller = std::make_unique<followers::PIDFollower>();
+                controller->set_config(config);
                 path_controller.reset();
                 std::cout << "Stanley controller created: " << (controller ? "success" : "failed") << std::endl;
                 break;
 
             case NavconControllerType::CARROT:
                 config.lookahead_distance = params.carrot_distance;
-                controller = navcon::create_controller("carrot", config);
+                controller = std::make_unique<followers::CarrotFollower>();
+                controller->set_config(config);
                 path_controller.reset();
                 break;
 

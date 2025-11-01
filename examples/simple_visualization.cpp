@@ -1,4 +1,4 @@
-#include "navcon/navcon.hpp"
+#include "navcon.hpp"
 #include "navcon/utils/visualize.hpp"
 #include <cstdlib>
 #include <ctime>
