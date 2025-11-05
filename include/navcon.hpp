@@ -180,8 +180,14 @@ namespace navcon {
             if (controller_type == NavconControllerType::PID || controller_type == NavconControllerType::STANLEY ||
                 controller_type == NavconControllerType::CARROT) {
                 goal = get_current_navcon_goal(); // Point-based controllers need specific targets
+            } else if (controller_type == NavconControllerType::PURE_PURSUIT) {
+                // Pure Pursuit uses the path, but needs goal set to END of path for goal-reached check
+                if (current_path.has_value() && !current_path->waypoints.empty()) {
+                    goal.target_pose = concord::Pose{current_path->waypoints.back(), concord::Euler{0.0f, 0.0f, 0.0f}};
+                    goal.tolerance_position = current_path->tolerance;
+                }
             }
-            // Pure Pursuit and Path Controller use the path set with set_path()
+            // Path Controller uses the path set with set_path()
 
             // Compute control command
             if (path_controller) {
@@ -319,7 +325,7 @@ namespace navcon {
                 // Convert waypoints to 3D coordinates for visualization
                 std::vector<std::array<float, 3>> path_points;
                 for (const auto &waypoint : current_path->waypoints) {
-                    path_points.push_back({static_cast<float>(waypoint.x), static_cast<float>(waypoint.y), 0.3f});
+                    path_points.push_back({static_cast<float>(waypoint.x), static_cast<float>(waypoint.y), 0});
                 }
 
                 // Draw the planned path as a green line
@@ -327,21 +333,20 @@ namespace navcon {
                     auto path_line = rerun::components::LineStrip3D(path_points);
                     rec->log_static(entity_prefix + "/planned_path",
                                     rerun::LineStrips3D(path_line)
-                                        .with_colors({{0, 255, 0}}) // Green for planned path
-                                        .with_radii({{0.0375f}}));
+                                        .with_colors({{0, 255, 0, 128}}) // Green for planned path
+                                        .with_radii({{0.05f}}));
                 }
 
                 // Visualize individual waypoints as green spheres
                 std::vector<rerun::components::Position3D> waypoint_positions;
                 for (const auto &waypoint : current_path->waypoints) {
-                    waypoint_positions.push_back(
-                        {static_cast<float>(waypoint.x), static_cast<float>(waypoint.y), 0.3f});
+                    waypoint_positions.push_back({static_cast<float>(waypoint.x), static_cast<float>(waypoint.y), 0});
                 }
 
                 if (!waypoint_positions.empty()) {
                     rec->log_static(entity_prefix + "/waypoints", rerun::Points3D(waypoint_positions)
                                                                       .with_colors({{0, 255, 0}}) // Green waypoints
-                                                                      .with_radii({{0.1f}}));
+                                                                      .with_radii({{0.07f}}));
                 }
 
                 // Highlight current target waypoint in yellow
@@ -349,9 +354,9 @@ namespace navcon {
                     const auto &current_target = current_path->waypoints[current_waypoint_index];
                     rec->log_static(entity_prefix + "/current_target",
                                     rerun::Points3D({{static_cast<float>(current_target.x),
-                                                      static_cast<float>(current_target.y), 0.4f}})
-                                        .with_colors({{255, 255, 0}}) // Yellow for current target
-                                        .with_radii({{0.15f}}));
+                                                      static_cast<float>(current_target.y), 0.0f}})
+                                        .with_colors({{255, 255, 0, 128}}) // Yellow for current target
+                                        .with_radii({{0.12f}}));
                 }
             }
 
@@ -384,18 +389,18 @@ namespace navcon {
                 }
             }
 
-            // Draw line from robot to current target (orange)
-            auto target = get_current_target();
-            if (target.x != 0 || target.y != 0) {
-                std::vector<std::array<float, 3>> direction_line = {
+            // Draw line from robot to current target waypoint
+            if (current_path.has_value() && current_waypoint_index < current_path->waypoints.size()) {
+                const auto &target_waypoint = current_path->waypoints[current_waypoint_index];
+                std::vector<std::array<float, 3>> target_line = {
                     {static_cast<float>(current_state_.pose.point.x), static_cast<float>(current_state_.pose.point.y),
                      0.2f},
-                    {static_cast<float>(target.x), static_cast<float>(target.y), 0.2f}};
+                    {static_cast<float>(target_waypoint.x), static_cast<float>(target_waypoint.y), 0}};
 
-                auto direction_strip = rerun::components::LineStrip3D(direction_line);
-                rec->log_static(entity_prefix + "/direction", rerun::LineStrips3D(direction_strip)
-                                                                  .with_colors({{255, 165, 0}}) // Orange for direction
-                                                                  .with_radii({{0.025f}}));
+                auto target_strip = rerun::components::LineStrip3D(target_line);
+                rec->log_static(entity_prefix + "/target_line", rerun::LineStrips3D(target_strip)
+                                                                    .with_colors({{255, 255, 0, 128}}) // Yellow
+                                                                    .with_radii({{0.02f}}));
             }
         }
 
@@ -473,6 +478,8 @@ namespace navcon {
             case NavconControllerType::PURE_PURSUIT:
                 std::cout << "Creating Pure Pursuit controller..." << std::endl;
                 config.lookahead_distance = params.lookahead_distance;
+                config.goal_tolerance = 0.5f;
+                config.angular_tolerance = 0.1f;
                 controller = std::make_unique<followers::PurePursuitFollower>();
                 controller->set_config(config);
                 path_controller.reset();

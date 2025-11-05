@@ -57,45 +57,60 @@ namespace navcon {
             }
         }
 
-        // Show robot pose
+        // Show robot pose as a rectangle
         inline void show_robot_pose(std::shared_ptr<rerun::RecordingStream> rec, const Pose &pose,
                                     const std::string &entity_path = "robot", const rerun::Color &color = {255, 255, 0},
                                     float scale = 1.0f) {
-            // Robot position
-            rec->log_static(
-                entity_path + "/position",
-                rerun::Points3D({{pose.point.x, pose.point.y, 0.0f}}).with_colors(color).with_radii(0.02f * scale));
+            // Robot dimensions
+            float width = 0.4f * scale;  // Robot width
+            float length = 0.6f * scale; // Robot length (front to back)
 
-            // Robot orientation (arrow)
-            float arrow_length = 0.5f * scale;
-            float end_x = pose.point.x + arrow_length * std::cos(pose.angle.yaw);
-            float end_y = pose.point.y + arrow_length * std::sin(pose.angle.yaw);
+            float cos_yaw = std::cos(pose.angle.yaw);
+            float sin_yaw = std::sin(pose.angle.yaw);
 
-            std::vector<rerun::Position3D> orientation_line = {{pose.point.x, pose.point.y, 0.0f},
-                                                               {end_x, end_y, 0.0f}};
+            // Calculate rectangle corners in robot frame, then transform to world frame
+            // Front-left, Front-right, Back-right, Back-left, Front-left (closed rectangle)
+            std::vector<std::array<float, 2>> corners_local = {
+                {length / 2, width / 2},   // Front-left
+                {length / 2, -width / 2},  // Front-right
+                {-length / 2, -width / 2}, // Back-right
+                {-length / 2, width / 2},  // Back-left
+                {length / 2, width / 2}    // Close the rectangle
+            };
+
+            std::vector<rerun::Position3D> rectangle_points;
+            for (const auto &corner : corners_local) {
+                float x_world = pose.point.x + cos_yaw * corner[0] - sin_yaw * corner[1];
+                float y_world = pose.point.y + sin_yaw * corner[0] + cos_yaw * corner[1];
+                rectangle_points.push_back({x_world, y_world, 0.0f});
+            }
+
+            // Draw rectangle as a line strip
+            rec->log_static(entity_path + "/body", rerun::LineStrips3D(rerun::components::LineStrip3D(rectangle_points))
+                                                       .with_colors(color)
+                                                       .with_radii(0.025f * scale));
+
+            // Add a small arrow at the front to show orientation
+            float arrow_length = length * 0.4f;
+            float front_center_x = pose.point.x + cos_yaw * length / 2;
+            float front_center_y = pose.point.y + sin_yaw * length / 2;
+            float arrow_end_x = pose.point.x + cos_yaw * (length / 2 + arrow_length);
+            float arrow_end_y = pose.point.y + sin_yaw * (length / 2 + arrow_length);
+
+            std::vector<rerun::Position3D> arrow_line = {{front_center_x, front_center_y, 0.0f},
+                                                         {arrow_end_x, arrow_end_y, 0.0f}};
             rec->log_static(entity_path + "/orientation",
-                            rerun::LineStrips3D(rerun::components::LineStrip3D(orientation_line)).with_colors(color));
+                            rerun::LineStrips3D(rerun::components::LineStrip3D(arrow_line))
+                                .with_colors(color)
+                                .with_radii(0.03f * scale));
         }
 
-        // Show robot state with velocity vector
+        // Show robot state
         inline void show_robot_state(std::shared_ptr<rerun::RecordingStream> rec, const RobotState &state,
                                      const std::string &entity_path = "robot_state",
                                      const rerun::Color &color = {255, 255, 0}, float scale = 1.0f) {
-            // Show robot pose
+            // Show robot pose as rectangle
             show_robot_pose(rec, state.pose, entity_path, color, scale);
-
-            // Show velocity vector
-            if (state.velocity.linear > 0.01f) {
-                float vel_scale = 2.0f * scale;
-                float end_x = state.pose.point.x + vel_scale * state.velocity.linear * std::cos(state.pose.angle.yaw);
-                float end_y = state.pose.point.y + vel_scale * state.velocity.linear * std::sin(state.pose.angle.yaw);
-
-                std::vector<rerun::Position3D> velocity_line = {{state.pose.point.x, state.pose.point.y, 0.0f},
-                                                                {end_x, end_y, 0.0f}};
-                rec->log_static(entity_path + "/velocity",
-                                rerun::LineStrips3D(rerun::components::LineStrip3D(velocity_line))
-                                    .with_colors({0, 255, 255})); // Cyan for velocity
-            }
         }
 
         // Show controller status
@@ -110,10 +125,12 @@ namespace navcon {
             rec->log_static(entity_path, rerun::TextLog(status_text).with_level(rerun::TextLogLevel::Info));
         }
 
-        // Show goal
+        // Show goal as a simple point
         inline void show_goal(std::shared_ptr<rerun::RecordingStream> rec, const Goal &goal,
                               const std::string &entity_path = "goal", const rerun::Color &color = {0, 255, 0}) {
-            show_robot_pose(rec, goal.target_pose, entity_path, color, 1.5f);
+            rec->log_static(entity_path, rerun::Points3D({{goal.target_pose.point.x, goal.target_pose.point.y, 0.0f}})
+                                             .with_colors(color)
+                                             .with_radii(0.15f));
         }
 
     } // namespace visualize

@@ -2,6 +2,7 @@
 
 #include "navcon/controller.hpp"
 #include <algorithm>
+#include <iostream>
 
 namespace navcon {
     namespace followers {
