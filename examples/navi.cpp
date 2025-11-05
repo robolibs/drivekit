@@ -20,8 +20,8 @@ int main() {
 
     spdlog::info("Visualization initialized");
 
-    // 1. Create a navigation controller (using Pure Pursuit for smooth path following)
-    navcon::Navcon navigator(navcon::NavconControllerType::PURE_PURSUIT);
+    // 1. Create a navigation controller (using Stanley for path tracking)
+    navcon::Navcon navigator(navcon::NavconControllerType::STANLEY);
 
     // 2. Set up robot constraints
     navcon::RobotConstraints constraints;

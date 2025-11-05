@@ -4,7 +4,7 @@
 #include <algorithm>
 
 namespace navcon {
-    namespace followers {
+    namespace controllers {
 
         // Simple carrot chasing controller for basic navigation
         class CarrotFollower : public Controller {
@@ -64,5 +64,5 @@ namespace navcon {
             inline std::string get_type() const override { return "carrot_follower"; }
         };
 
-    } // namespace followers
+    } // namespace controllers
 } // namespace navcon

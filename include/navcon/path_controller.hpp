@@ -1,7 +1,7 @@
 #pragma once
 
 #include "navcon/controller.hpp"
-#include "navcon/followers/pure_pursuit.hpp"
+#include "navcon/controllers/pure_pursuit.hpp"
 #include <cmath>
 #include <memory>
 
@@ -19,7 +19,7 @@ namespace navcon {
             // Create the follower
             switch (follower_type) {
             case FollowerType::PURE_PURSUIT:
-                follower_ = std::make_unique<followers::PurePursuitFollower>();
+                follower_ = std::make_unique<controllers::PurePursuitFollower>();
                 break;
             }
 

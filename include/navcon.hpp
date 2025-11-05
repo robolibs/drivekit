@@ -2,9 +2,10 @@
 
 #include "concord/concord.hpp"
 #include "navcon/controller.hpp"
-#include "navcon/followers/carrot.hpp"
-#include "navcon/followers/pid.hpp"
-#include "navcon/followers/pure_pursuit.hpp"
+#include "navcon/controllers/carrot.hpp"
+#include "navcon/controllers/pid.hpp"
+#include "navcon/controllers/pure_pursuit.hpp"
+#include "navcon/controllers/stanley.hpp"
 #include "navcon/path_controller.hpp"
 #include "rerun.hpp"
 #include <cmath>
@@ -177,11 +178,11 @@ namespace navcon {
 
             // Get current target goal
             Goal goal;
-            if (controller_type == NavconControllerType::PID || controller_type == NavconControllerType::STANLEY ||
-                controller_type == NavconControllerType::CARROT) {
+            if (controller_type == NavconControllerType::PID || controller_type == NavconControllerType::CARROT) {
                 goal = get_current_navcon_goal(); // Point-based controllers need specific targets
-            } else if (controller_type == NavconControllerType::PURE_PURSUIT) {
-                // Pure Pursuit uses the path, but needs goal set to END of path for goal-reached check
+            } else if (controller_type == NavconControllerType::PURE_PURSUIT ||
+                       controller_type == NavconControllerType::STANLEY) {
+                // Pure Pursuit and Stanley use the path, but need goal set to END of path for goal-reached check
                 if (current_path.has_value() && !current_path->waypoints.empty()) {
                     goal.target_pose = concord::Pose{current_path->waypoints.back(), concord::Euler{0.0f, 0.0f, 0.0f}};
                     goal.tolerance_position = current_path->tolerance;
@@ -469,7 +470,7 @@ namespace navcon {
                 config.kp_angular = params.angular_kp;
                 config.ki_angular = params.angular_ki;
                 config.kd_angular = params.angular_kd;
-                controller = std::make_unique<followers::PIDFollower>();
+                controller = std::make_unique<controllers::PIDFollower>();
                 controller->set_config(config);
                 path_controller.reset();
                 std::cout << "PID controller created: " << (controller ? "success" : "failed") << std::endl;
@@ -480,7 +481,7 @@ namespace navcon {
                 config.lookahead_distance = params.lookahead_distance;
                 config.goal_tolerance = 0.5f;
                 config.angular_tolerance = 0.1f;
-                controller = std::make_unique<followers::PurePursuitFollower>();
+                controller = std::make_unique<controllers::PurePursuitFollower>();
                 controller->set_config(config);
                 path_controller.reset();
                 std::cout << "Pure Pursuit controller created: " << (controller ? "success" : "failed") << std::endl;
@@ -490,7 +491,10 @@ namespace navcon {
                 std::cout << "Creating Stanley controller..." << std::endl;
                 config.k_cross_track = params.cross_track_gain;
                 config.k_heading = params.softening_gain;
-                controller = std::make_unique<followers::PIDFollower>();
+                config.goal_tolerance = 0.5f;
+                config.angular_tolerance = 0.1f;
+                config.allow_reverse = false; // Can be enabled if needed
+                controller = std::make_unique<controllers::StanleyFollower>();
                 controller->set_config(config);
                 path_controller.reset();
                 std::cout << "Stanley controller created: " << (controller ? "success" : "failed") << std::endl;
@@ -498,7 +502,7 @@ namespace navcon {
 
             case NavconControllerType::CARROT:
                 config.lookahead_distance = params.carrot_distance;
-                controller = std::make_unique<followers::CarrotFollower>();
+                controller = std::make_unique<controllers::CarrotFollower>();
                 controller->set_config(config);
                 path_controller.reset();
                 break;
