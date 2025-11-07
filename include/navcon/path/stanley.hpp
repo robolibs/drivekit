@@ -6,7 +6,7 @@
 #include <iostream>
 
 namespace navcon {
-    namespace controllers {
+    namespace path {
 
         // Stanley controller for path tracking (Stanford DARPA Grand Challenge)
         // Combines heading error and cross-track error correction
@@ -196,5 +196,5 @@ namespace navcon {
             }
         };
 
-    } // namespace controllers
+    } // namespace path
 } // namespace navcon

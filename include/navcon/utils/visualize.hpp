@@ -2,9 +2,9 @@
 
 #ifdef HAS_RERUN
 
-#include "../controllers/carrot.hpp"
-#include "../controllers/pid.hpp"
-#include "../controllers/pure_pursuit.hpp"
+#include "../point/carrot.hpp"
+#include "../point/pid.hpp"
+#include "../path/pure_pursuit.hpp"
 
 #include "../types.hpp"
 #include <array>

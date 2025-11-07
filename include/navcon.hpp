@@ -2,11 +2,10 @@
 
 #include "concord/concord.hpp"
 #include "navcon/controller.hpp"
-#include "navcon/controllers/carrot.hpp"
-#include "navcon/controllers/pid.hpp"
-#include "navcon/controllers/pure_pursuit.hpp"
-#include "navcon/controllers/stanley.hpp"
-#include "navcon/path_controller.hpp"
+#include "navcon/path/pure_pursuit.hpp"
+#include "navcon/path/stanley.hpp"
+#include "navcon/point/carrot.hpp"
+#include "navcon/point/pid.hpp"
 #include "rerun.hpp"
 #include <cmath>
 #include <iostream>
@@ -38,7 +37,7 @@ namespace navcon {
     };
 
     // Controller types
-    enum class NavconControllerType { PID, PURE_PURSUIT, STANLEY, CARROT, PATH_CONTROLLER };
+    enum class NavconControllerType { PID, PURE_PURSUIT, STANLEY, CARROT };
 
     // ============================================================================
     // Navcon - High-level navigation controller using navcon library
@@ -46,8 +45,7 @@ namespace navcon {
     class Navcon {
       private:
         NavconControllerType controller_type;
-        std::unique_ptr<Controller> controller;          // Simple controller or PathController
-        std::unique_ptr<PathController> path_controller; // Advanced path controller
+        std::unique_ptr<Controller> controller;
 
         // Current navigation state
         std::optional<NavigationGoal> current_goal;
@@ -134,9 +132,6 @@ namespace navcon {
             if (controller) {
                 controller->set_path(navcon_path);
             }
-            if (path_controller) {
-                path_controller->set_path(navcon_path);
-            }
         }
 
         void clear_goal() {
@@ -153,9 +148,6 @@ namespace navcon {
             Path empty_path;
             if (controller) {
                 controller->set_path(empty_path);
-            }
-            if (path_controller) {
-                path_controller->set_path(empty_path);
             }
         }
 
@@ -188,13 +180,9 @@ namespace navcon {
                     goal.tolerance_position = current_path->tolerance;
                 }
             }
-            // Path Controller uses the path set with set_path()
 
             // Compute control command
-            if (path_controller) {
-                // Use path controller
-                cmd = path_controller->compute_control(current_state, goal, constraints_, dt);
-            } else if (controller) {
+            if (controller) {
                 // Use simple controller
                 cmd = controller->compute_control(current_state, goal, constraints_, dt);
             }
@@ -302,14 +290,7 @@ namespace navcon {
             if (controller) {
                 controller->set_path(navcon_path);
             }
-            if (path_controller) {
-                path_controller->set_path(navcon_path);
-            }
         }
-
-        // Direct access to path controller for advanced usage
-        PathController *get_path_controller() { return path_controller.get(); }
-        const PathController *get_path_controller() const { return path_controller.get(); }
 
         // Direct access to simple controller
         Controller *get_controller() { return controller.get(); }
@@ -470,9 +451,8 @@ namespace navcon {
                 config.kp_angular = params.angular_kp;
                 config.ki_angular = params.angular_ki;
                 config.kd_angular = params.angular_kd;
-                controller = std::make_unique<controllers::PIDFollower>();
+                controller = std::make_unique<point::PIDFollower>();
                 controller->set_config(config);
-                path_controller.reset();
                 std::cout << "PID controller created: " << (controller ? "success" : "failed") << std::endl;
                 break;
 
@@ -481,9 +461,8 @@ namespace navcon {
                 config.lookahead_distance = params.lookahead_distance;
                 config.goal_tolerance = 0.5f;
                 config.angular_tolerance = 0.1f;
-                controller = std::make_unique<controllers::PurePursuitFollower>();
+                controller = std::make_unique<path::PurePursuitFollower>();
                 controller->set_config(config);
-                path_controller.reset();
                 std::cout << "Pure Pursuit controller created: " << (controller ? "success" : "failed") << std::endl;
                 break;
 
@@ -494,36 +473,15 @@ namespace navcon {
                 config.goal_tolerance = 0.5f;
                 config.angular_tolerance = 0.1f;
                 config.allow_reverse = false; // Can be enabled if needed
-                controller = std::make_unique<controllers::StanleyFollower>();
+                controller = std::make_unique<path::StanleyFollower>();
                 controller->set_config(config);
-                path_controller.reset();
                 std::cout << "Stanley controller created: " << (controller ? "success" : "failed") << std::endl;
                 break;
 
             case NavconControllerType::CARROT:
                 config.lookahead_distance = params.carrot_distance;
-                controller = std::make_unique<controllers::CarrotFollower>();
+                controller = std::make_unique<point::CarrotFollower>();
                 controller->set_config(config);
-                path_controller.reset();
-                break;
-
-            case NavconControllerType::PATH_CONTROLLER:
-                std::cout << "Creating Path controller..." << std::endl;
-                path_controller = std::make_unique<PathController>(PathController::FollowerType::PURE_PURSUIT);
-                controller.reset();
-
-                // Configure path controller
-                path_controller->set_sharp_turn_threshold(params.sharp_turn_threshold);
-                path_controller->set_u_turn_threshold(params.u_turn_threshold);
-                path_controller->set_lookahead_distance(params.path_lookahead_distance);
-
-                config.goal_tolerance = 0.5f;
-                config.angular_tolerance = 0.1f;
-                config.kp_linear = params.linear_kp;
-                config.kp_angular = params.angular_kp;
-                path_controller->set_config(config);
-
-                std::cout << "Path controller created: success" << std::endl;
                 break;
             }
         }

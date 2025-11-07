@@ -4,7 +4,7 @@
 #include <algorithm>
 
 namespace navcon {
-    namespace controllers {
+    namespace point {
 
         // PID controller for basic point-to-point navigation
         class PIDFollower : public Controller {
@@ -106,5 +106,5 @@ namespace navcon {
             double last_heading_error_ = 0.0;
         };
 
-    } // namespace controllers
+    } // namespace point
 } // namespace navcon

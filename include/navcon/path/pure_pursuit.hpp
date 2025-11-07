@@ -5,7 +5,7 @@
 #include <iostream>
 
 namespace navcon {
-    namespace controllers {
+    namespace path {
 
         // Pure Pursuit controller for smooth path following
         class PurePursuitFollower : public Controller {
@@ -157,5 +157,5 @@ namespace navcon {
             }
         };
 
-    } // namespace controllers
+    } // namespace path
 } // namespace navcon

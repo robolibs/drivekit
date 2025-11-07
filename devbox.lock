@@ -328,6 +328,54 @@
         }
       }
     },
+    "cppad@latest": {
+      "last_modified": "2025-10-22T20:59:19Z",
+      "resolved": "github:NixOS/nixpkgs/01b6809f7f9d1183a2b3e081f0a1e6f8f415cb09#cppad",
+      "source": "devbox-search",
+      "version": "20250000.2",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/dfpnphwv085a0zqv8sydvfq1n0i6b1gl-cppad-20250000.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/dfpnphwv085a0zqv8sydvfq1n0i6b1gl-cppad-20250000.2"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/6pq7ij077psdwyjr4vxgbzsmm77xgzkp-cppad-20250000.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/6pq7ij077psdwyjr4vxgbzsmm77xgzkp-cppad-20250000.2"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/07k0cw7dlck1yc2m9gpmrikjsacaqh3w-cppad-20250000.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/07k0cw7dlck1yc2m9gpmrikjsacaqh3w-cppad-20250000.2"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/dfqahbzn24fyx8sdfivv0laalka1g3bb-cppad-20250000.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/dfqahbzn24fyx8sdfivv0laalka1g3bb-cppad-20250000.2"
+        }
+      }
+    },
     "cppzmq@latest": {
       "last_modified": "2025-10-22T20:59:19Z",
       "resolved": "github:NixOS/nixpkgs/01b6809f7f9d1183a2b3e081f0a1e6f8f415cb09#cppzmq",
@@ -373,6 +421,54 @@
             }
           ],
           "store_path": "/nix/store/cjcysg4bg3yxdf9lqv79sxz94bhfq5fg-cppzmq-4.11.0"
+        }
+      }
+    },
+    "eigen@latest": {
+      "last_modified": "2025-10-22T20:59:19Z",
+      "resolved": "github:NixOS/nixpkgs/01b6809f7f9d1183a2b3e081f0a1e6f8f415cb09#eigen",
+      "source": "devbox-search",
+      "version": "3.4.0-unstable-2022-05-19",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/vs3pai8pgnhvnpnmy9liid1ijzqfma3p-eigen-3.4.0-unstable-2022-05-19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/vs3pai8pgnhvnpnmy9liid1ijzqfma3p-eigen-3.4.0-unstable-2022-05-19"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/c4d65nac5jsjlksjxyj6946dhafi813d-eigen-3.4.0-unstable-2022-05-19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/c4d65nac5jsjlksjxyj6946dhafi813d-eigen-3.4.0-unstable-2022-05-19"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ww1r7l5fplm7w7dqz0ywjimxygz0ldvg-eigen-3.4.0-unstable-2022-05-19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/ww1r7l5fplm7w7dqz0ywjimxygz0ldvg-eigen-3.4.0-unstable-2022-05-19"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/25gsdkl6dq9yh71j6m41b355a7rk4a4l-eigen-3.4.0-unstable-2022-05-19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/25gsdkl6dq9yh71j6m41b355a7rk4a4l-eigen-3.4.0-unstable-2022-05-19"
         }
       }
     },
@@ -558,6 +654,54 @@
       "last_modified": "2025-11-04T19:54:02Z",
       "resolved": "github:NixOS/nixpkgs/12c1f0253aa9a54fdf8ec8aecaafada64a111e24?lastModified=1762286042&narHash=sha256-OD5HsZ%2BsN7VvNucbrjiCz7CHF5zf9gP51YVJvPwYIH8%3D"
     },
+    "ipopt@latest": {
+      "last_modified": "2025-11-02T15:04:35Z",
+      "resolved": "github:NixOS/nixpkgs/a3e67ddfeb2e04ef6ae3fddc8aae678696b08714#ipopt",
+      "source": "devbox-search",
+      "version": "3.14.19",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/p5wyqhzf85w8rigalqvkpbvsnm1916x3-ipopt-3.14.19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/p5wyqhzf85w8rigalqvkpbvsnm1916x3-ipopt-3.14.19"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/vw6k6cpq1l2wapcbwmicdm6napiwb2w9-ipopt-3.14.19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/vw6k6cpq1l2wapcbwmicdm6napiwb2w9-ipopt-3.14.19"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bw7qri660x93x009qn8zzjnfxyqissz8-ipopt-3.14.19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/bw7qri660x93x009qn8zzjnfxyqissz8-ipopt-3.14.19"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/632m48vcy7752gyaslw2175js6cbhgwb-ipopt-3.14.19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/632m48vcy7752gyaslw2175js6cbhgwb-ipopt-3.14.19"
+        }
+      }
+    },
     "libsodium@latest": {
       "last_modified": "2025-10-30T18:40:41Z",
       "resolved": "github:NixOS/nixpkgs/45ebaee5d90bab997812235564af4cf5107bde89#libsodium",
@@ -629,6 +773,12 @@
           "store_path": "/nix/store/i74fk40miw9py84pqilsrr2awwrd091k-libsodium-1.0.20"
         }
       }
+    },
+    "pkgconfig@latest": {
+      "last_modified": "2023-02-24T09:01:09Z",
+      "resolved": "github:NixOS/nixpkgs/7d0ed7f2e5aea07ab22ccb338d27fbe347ed2f11#pkgconfig",
+      "source": "devbox-search",
+      "version": "0.29.2"
     },
     "rerun@latest": {
       "last_modified": "2025-10-28T12:57:11Z",
