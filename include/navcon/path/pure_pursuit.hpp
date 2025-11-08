@@ -23,9 +23,15 @@ namespace navcon {
                 // Get target point using improved lookahead algorithm
                 Point target_point;
                 bool has_path = !path_.waypoints.empty();
+                double lookahead_distance = config_.lookahead_distance;
+                double robot_length = constraints.robot_length > 0.0
+                                          ? constraints.robot_length
+                                          : (constraints.wheelbase > 0.0 ? constraints.wheelbase : 1.0);
+                double progress_distance = compute_progress_distance(robot_length);
 
                 if (has_path) {
-                    auto lookahead_result = find_lookahead_point(current_state.pose);
+                    auto lookahead_result =
+                        find_lookahead_point(current_state.pose, lookahead_distance, progress_distance);
                     if (!lookahead_result.has_value()) {
                         // Reached end of path
                         target_point = goal.target_pose.point;
@@ -56,8 +62,6 @@ namespace navcon {
                 double dy_local = -sin_theta * dx_global + cos_theta * dy_global;
 
                 // Calculate curvature using aggressive pure pursuit formula for sharp turning
-                double lookahead_distance = config_.lookahead_distance;
-
                 // Much more aggressive curvature calculation - use shorter effective distance for sharper turns
                 double curvature = 2.0 * dy_local / (lookahead_distance * lookahead_distance);
 
@@ -92,7 +96,8 @@ namespace navcon {
             inline std::string get_type() const override { return "pure_pursuit_follower"; }
 
           private:
-            inline std::optional<Point> find_lookahead_point(const Pose &current_pose) {
+            inline std::optional<Point> find_lookahead_point(const Pose &current_pose, double lookahead_distance,
+                                                            double progress_distance) {
                 if (path_.waypoints.empty()) return std::nullopt;
 
                 // FIXED waypoint progression: advance when close OR when we've passed the waypoint
@@ -113,7 +118,7 @@ namespace navcon {
                     double dot_product = dx_to_current * dx_to_next + dy_to_current * dy_to_next;
 
                     // Advance if: close to waypoint OR passed it OR too far away (stuck)
-                    if (dist_to_current < 2.0 || dot_product < 0 || dist_to_current > 15.0) {
+                    if (dist_to_current < progress_distance || dot_product < 0 || dist_to_current > 15.0) {
                         path_index_++;
                     } else {
                         break;
@@ -126,7 +131,7 @@ namespace navcon {
 
                 // Check if we can use the current waypoint directly (if it's far enough)
                 double dist_to_start = current_pose.point.distance_to(start_point);
-                if (dist_to_start >= config_.lookahead_distance * 0.8) {
+                if (dist_to_start >= lookahead_distance * 0.8) {
                     return start_point; // Use current waypoint if it's at good lookahead distance
                 }
 
@@ -137,9 +142,9 @@ namespace navcon {
                     Point current_point = path_.waypoints[i].point;
                     double segment_length = last_point.distance_to(current_point);
 
-                    if (accumulated_distance + segment_length >= config_.lookahead_distance) {
+                    if (accumulated_distance + segment_length >= lookahead_distance) {
                         // Interpolate point on this segment
-                        double remaining = config_.lookahead_distance - accumulated_distance;
+                        double remaining = lookahead_distance - accumulated_distance;
                         double t = segment_length > 0 ? remaining / segment_length : 0.0;
 
                         Point lookahead;
@@ -154,6 +159,14 @@ namespace navcon {
 
                 // If we've reached the end of the path, return the last waypoint
                 return path_.waypoints.back().point;
+            }
+
+            inline double compute_progress_distance(double robot_length) const {
+                double length_based = robot_length * 2.5;
+                if (length_based <= 0.0) {
+                    length_based = 1.0;
+                }
+                return std::max(length_based, config_.lookahead_distance);
             }
         };
 

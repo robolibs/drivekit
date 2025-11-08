@@ -28,9 +28,13 @@ include(FetchContent)
 # --------------------------------------------------------------------------------------------------
 set(ext_deps)
 
-FetchContent_Declare(concord GIT_REPOSITORY https://github.com/onlyhead/concord.git GIT_TAG 2.0.2)
+FetchContent_Declare(concord GIT_REPOSITORY https://github.com/robolibs/concord.git GIT_TAG 2.0.2)
 FetchContent_MakeAvailable(concord)
 list(APPEND ext_deps concord::concord)
+
+FetchContent_Declare(bonsai GIT_REPOSITORY https://github.com/robolibs/bonsai.git GIT_TAG develop)
+FetchContent_MakeAvailable(bonsai)
+list(APPEND ext_deps bonsai::bonsai)
 
 # Optional dependencies via pkg-config (for MPC, etc.)
 if(${project_name_upper}_ENABLE_MPC)
