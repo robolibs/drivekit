@@ -15,6 +15,11 @@
 
 #ifdef HAS_RERUN
 #include <rerun.hpp>
+#else
+// Forward declarations when rerun is not available
+namespace rerun {
+    class RecordingStream;
+}
 #endif
 
 namespace navcon {
@@ -96,14 +101,10 @@ namespace navcon {
         Navcon(NavconControllerType type = NavconControllerType::PID);
         ~Navcon() = default;
 
-        // Initialize with robot constraints (without visualization)
-        void init(const RobotConstraints &robot_constraints);
-
-#ifdef HAS_RERUN
         // Initialize with robot constraints and recording stream
-        void init(const RobotConstraints &robot_constraints, std::shared_ptr<rerun::RecordingStream> recording_stream,
+        void init(const RobotConstraints &robot_constraints,
+                  std::shared_ptr<rerun::RecordingStream> recording_stream = nullptr,
                   const std::string &prefix = "navigation");
-#endif
 
         // Goal management
         void set_goal(const NavigationGoal &goal);
@@ -138,10 +139,8 @@ namespace navcon {
         Controller *get_controller();
         const Controller *get_controller() const;
 
-#ifdef HAS_RERUN
         // Visualization
         void tock() const;
-#endif
 
       private:
         // Internal helper methods

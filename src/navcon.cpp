@@ -16,22 +16,19 @@ namespace navcon {
     // Navcon constructor
     Navcon::Navcon(NavconControllerType type) : controller_type(type) {}
 
-    // Initialize with robot constraints (without visualization)
-    void Navcon::init(const RobotConstraints &robot_constraints) {
-        constraints_ = robot_constraints;
-        create_controller();
-    }
-
-#ifdef HAS_RERUN
     // Initialize with robot constraints and recording stream
     void Navcon::init(const RobotConstraints &robot_constraints,
                       std::shared_ptr<rerun::RecordingStream> recording_stream, const std::string &prefix) {
         constraints_ = robot_constraints;
+#ifdef HAS_RERUN
         rec = recording_stream;
         entity_prefix = prefix;
+#else
+        (void)recording_stream; // Suppress unused parameter warning
+        (void)prefix;
+#endif
         create_controller();
     }
-#endif
 
     // Goal management
     void Navcon::set_goal(const NavigationGoal &goal) {
@@ -231,9 +228,9 @@ namespace navcon {
 
     const Controller *Navcon::get_controller() const { return controller.get(); }
 
-#ifdef HAS_RERUN
     // Visualization
     void Navcon::tock() const {
+#ifdef HAS_RERUN
         if (!rec) {
             return;
         }
@@ -320,8 +317,11 @@ namespace navcon {
                                                                 .with_colors({{255, 255, 0, 128}}) // Yellow
                                                                 .with_radii({{0.02f}}));
         }
-    }
+#else
+        // No-op when rerun is not available
+        (void)0;
 #endif // HAS_RERUN
+    }
 
     // Internal helper methods
     Goal Navcon::get_current_navcon_goal() const {
