@@ -89,11 +89,14 @@ target_include_directories(${project_name}
 )
 
 target_link_libraries(${project_name} PRIVATE ${ext_deps})
-
-# Export dependencies as public (headers use them)
 target_link_libraries(${project_name} PUBLIC ${ext_deps})
-
 target_compile_options(${project_name} PRIVATE ${params})
+if(HAS_RERUN OR ${project_name_upper}_BUILD_EXAMPLES)
+    find_package(rerun_sdk REQUIRED)
+    list(APPEND ext_deps rerun_sdk)
+    target_compile_definitions(${project_name} PUBLIC HAS_RERUN)
+    target_link_libraries(${project_name} PUBLIC rerun_sdk)
+endif()
 
 include_directories(include)
 
@@ -127,14 +130,8 @@ export(EXPORT ${project_name}Targets
 
 # --------------------------------------------------------------------------------------------------
 if(${project_name_upper}_BUILD_EXAMPLES)
-  find_package(rerun_sdk REQUIRED)
   find_package(spdlog REQUIRED)
   list(APPEND ext_deps spdlog::spdlog)
-  
-  # Add HAS_RERUN definition and link rerun to the library when examples are built
-  target_compile_definitions(${project_name} PUBLIC HAS_RERUN)
-  target_link_libraries(${project_name} PUBLIC rerun_sdk)
-
   
   file(GLOB exe CONFIGURE_DEPENDS examples/*.cpp)
 
