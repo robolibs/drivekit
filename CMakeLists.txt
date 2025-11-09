@@ -76,28 +76,40 @@ else()
 endif()
 
 # --------------------------------------------------------------------------------------------------
-add_library(${project_name} INTERFACE)
-# Allow users to link via `${project_name}::${project_name}`
+# Build library
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
+
+add_library(${project_name} ${SOURCES})
 add_library(${project_name}::${project_name} ALIAS ${project_name})
-target_include_directories(${project_name} INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+
+target_include_directories(${project_name} 
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
-install(
-  DIRECTORY include/
-  DESTINATION include
-)
+target_link_libraries(${project_name} PRIVATE ${ext_deps})
+
+# Export dependencies as public (headers use them)
+target_link_libraries(${project_name} PUBLIC ${ext_deps})
+
+target_compile_options(${project_name} PRIVATE ${params})
+
 include_directories(include)
 
 # --------------------------------------------------------------------------------------------------
 include(GNUInstallDirs)
 
-#Install headers
+# Install headers
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-#Install and export the INTERFACE target
-install(TARGETS ${project_name} EXPORT ${project_name}Targets)
+# Install library and export targets
+install(TARGETS ${project_name} 
+    EXPORT ${project_name}Targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
 
 #Install the export file so that `find_package(${project_name})` works
 install(EXPORT ${project_name}Targets
@@ -115,26 +127,25 @@ export(EXPORT ${project_name}Targets
 
 # --------------------------------------------------------------------------------------------------
 if(${project_name_upper}_BUILD_EXAMPLES)
-  add_definitions(-DHAS_RERUN)
   find_package(rerun_sdk REQUIRED)
-  list(APPEND ext_deps rerun_sdk)
-
   find_package(spdlog REQUIRED)
   list(APPEND ext_deps spdlog::spdlog)
+  
+  # Add HAS_RERUN definition and link rerun to the library when examples are built
+  target_compile_definitions(${project_name} PUBLIC HAS_RERUN)
+  target_link_libraries(${project_name} PUBLIC rerun_sdk)
 
   
   file(GLOB exe CONFIGURE_DEPENDS examples/*.cpp)
+
   # ----------------------------------------------
   set(exec_names)
   foreach(src_file IN LISTS exe)
     get_filename_component(exec_name "${src_file}" NAME_WE)
     add_executable(${exec_name} "${src_file}")
-      foreach(lib_file IN LISTS internal_deps)
-        target_compile_options(${exec_name} PRIVATE ${params})
-        target_sources(${exec_name} PRIVATE "${lib_file}")
-      endforeach()
-    target_compile_options(${exec_name} PRIVATE ${params} ${CURL_CFLAGS_OTHER})
-    target_link_libraries(${exec_name} ${ext_deps})
+    target_compile_definitions(${exec_name} PRIVATE HAS_RERUN)
+    target_compile_options(${exec_name} PRIVATE ${params})
+    target_link_libraries(${exec_name} ${project_name}::${project_name} ${ext_deps})
     install(TARGETS ${exec_name} DESTINATION bin)
     list(APPEND exec_names ${exec_name})
   endforeach()
@@ -166,11 +177,8 @@ if(${project_name_upper}_ENABLE_TESTS)
   foreach(src_file IN LISTS test_src)
     get_filename_component(test_name "${src_file}" NAME_WE)
     add_executable(${test_name} "${src_file}")
-      foreach(lib_file IN LISTS internal_deps)
-        target_compile_options(${test_name} PRIVATE ${params})
-        target_sources(${test_name} PRIVATE "${lib_file}")
-      endforeach()
-    target_link_libraries(${test_name} ${ext_deps} doctest_with_main)
+    target_compile_options(${test_name} PRIVATE ${params})
+    target_link_libraries(${test_name} ${project_name}::${project_name} doctest_with_main)
     add_test(NAME ${test_name} COMMAND ${test_name})
   endforeach()
 endif()
