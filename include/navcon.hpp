@@ -1,11 +1,11 @@
 #pragma once
 
 #include "concord/concord.hpp"
-#include "navcon/controller.hpp"
-#include "navcon/path/pure_pursuit.hpp"
-#include "navcon/path/stanley.hpp"
-#include "navcon/point/carrot.hpp"
-#include "navcon/point/pid.hpp"
+#include "navcon/tracking/controller.hpp"
+#include "navcon/tracking/path/pure_pursuit.hpp"
+#include "navcon/tracking/path/stanley.hpp"
+#include "navcon/tracking/point/carrot.hpp"
+#include "navcon/tracking/point/pid.hpp"
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -51,7 +51,7 @@ namespace navcon {
     class Navcon {
       private:
         NavconControllerType controller_type;
-        std::unique_ptr<Controller> controller;
+        std::unique_ptr<tracking::Controller> controller;
 
         // Current navigation state
         std::optional<NavigationGoal> current_goal;
@@ -136,8 +136,8 @@ namespace navcon {
         void smoothen(float interval_cm = 100.0f);
 
         // Direct access to simple controller
-        Controller *get_controller();
-        const Controller *get_controller() const;
+        tracking::Controller *get_controller();
+        const tracking::Controller *get_controller() const;
 
         // Visualization
         void tock() const;

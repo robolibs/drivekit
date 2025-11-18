@@ -1,5 +1,5 @@
 #include "navcon.hpp"
-#include "navcon/utils/visualize.hpp"
+#include "navcon/tracking/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -57,7 +57,7 @@ int main() {
         return 1;
     }
 
-    navcon::visualize::show_path(rec, make_visual_path(waypoints), "pid_path", rerun::Color(0, 120, 255));
+    navcon::tracking::visualize::show_path(rec, make_visual_path(waypoints), "pid_path", rerun::Color(0, 120, 255));
 
     auto set_navigation_goal = [&](size_t index) {
         navcon::NavigationGoal next_goal(waypoints[index], 0.2f, 0.35f);
@@ -66,7 +66,7 @@ int main() {
         navcon::Goal viz_goal;
         viz_goal.target_pose = concord::Pose{next_goal.target, concord::Euler{0.0f, 0.0f, 0.0f}};
         viz_goal.tolerance_position = next_goal.tolerance;
-        navcon::visualize::show_goal(rec, viz_goal, "pid_goal");
+        navcon::tracking::visualize::show_goal(rec, viz_goal, "pid_goal");
     };
 
     size_t waypoint_index = 0;
@@ -94,7 +94,7 @@ int main() {
 
             current_time += dt;
 
-            navcon::visualize::show_robot_state(rec, robot_state, "robot_pid", rerun::Color(0, 120, 255));
+            navcon::tracking::visualize::show_robot_state(rec, robot_state, "robot_pid", rerun::Color(0, 120, 255));
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {

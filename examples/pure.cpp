@@ -1,5 +1,5 @@
 #include "navcon.hpp"
-#include "navcon/utils/visualize.hpp"
+#include "navcon/tracking/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -10,12 +10,11 @@
 
 namespace {
     std::vector<concord::Point> build_s_shape_path() {
-        return {
-            {0.0, 0.0},  {2.0, 0.0},  {4.0, 0.5},  {6.0, 1.5},  {8.0, 3.0},  {10.0, 5.0}, {12.0, 7.5},
-            {14.0, 10.0}, {16.0, 12.0}, {18.0, 13.5}, {20.0, 14.5}, {22.0, 15.0}, {24.0, 15.0}, {26.0, 15.0},
-            {28.0, 15.0}, {30.0, 15.0}, {32.0, 15.0}, {34.0, 15.0}, {36.0, 14.5}, {38.0, 13.5}, {40.0, 12.0},
-            {42.0, 10.0}, {44.0, 7.5}, {46.0, 5.0}, {48.0, 3.0}, {50.0, 1.5}, {52.0, 0.5}, {54.0, 0.0},
-            {56.0, 0.0}};
+        return {{0.0, 0.0},   {2.0, 0.0},   {4.0, 0.5},   {6.0, 1.5},   {8.0, 3.0},   {10.0, 5.0},
+                {12.0, 7.5},  {14.0, 10.0}, {16.0, 12.0}, {18.0, 13.5}, {20.0, 14.5}, {22.0, 15.0},
+                {24.0, 15.0}, {26.0, 15.0}, {28.0, 15.0}, {30.0, 15.0}, {32.0, 15.0}, {34.0, 15.0},
+                {36.0, 14.5}, {38.0, 13.5}, {40.0, 12.0}, {42.0, 10.0}, {44.0, 7.5},  {46.0, 5.0},
+                {48.0, 3.0},  {50.0, 1.5},  {52.0, 0.5},  {54.0, 0.0},  {56.0, 0.0}};
     }
 } // namespace
 
@@ -45,8 +44,8 @@ int main() {
     navigator.init(constraints, rec);
 
     navcon::PathGoal path_goal(build_s_shape_path(),
-                               0.5f,  // tolerance
-                               0.8f,  // max speed
+                               0.5f, // tolerance
+                               0.8f, // max speed
                                false);
 
     navigator.set_path(path_goal);
@@ -74,7 +73,8 @@ int main() {
 
             current_time += dt;
 
-            navcon::visualize::show_robot_state(rec, robot_state, "robot_pure_pursuit", rerun::Color(0, 255, 0));
+            navcon::tracking::visualize::show_robot_state(rec, robot_state, "robot_pure_pursuit",
+                                                          rerun::Color(0, 255, 0));
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
