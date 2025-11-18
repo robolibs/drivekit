@@ -68,6 +68,9 @@ namespace navcon {
                                               //
         double robot_width = 0.0;             // Distance between front and rear axles
         double robot_length = 0.0;            // Distance between front and rear axles
+
+        // Behavior flags
+        bool allow_reverse = false; // Allow backward maneuvers for tight turns
     };
 
     // Control output types
