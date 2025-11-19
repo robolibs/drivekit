@@ -1,5 +1,5 @@
 #include "navcon.hpp"
-#include "navcon/utils/visualize.hpp"
+#include "navcon/tracking/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -9,8 +9,8 @@
 
 namespace {
     std::vector<concord::Point> build_carrot_waypoints() {
-        return {{-2.0f, -6.0f}, {-0.5f, -5.0f}, {1.0f, -4.0f}, {2.5f, -3.0f}, {4.0f, -1.5f}, {5.5f, -0.5f},
-                {6.0f, -0.25f}, {6.0f, -3.0f}};
+        return {{-2.0f, -6.0f}, {-0.5f, -5.0f}, {1.0f, -4.0f},  {2.5f, -3.0f},
+                {4.0f, -1.5f},  {5.5f, -0.5f},  {6.0f, -0.25f}, {6.0f, -3.0f}};
     }
 
     navcon::Path make_visual_path(const std::vector<concord::Point> &points) {
@@ -37,7 +37,7 @@ int main() {
 
     spdlog::info("Visualization initialized for Carrot demo");
 
-    navcon::Navcon navigator(navcon::NavconControllerType::CARROT);
+    navcon::Tracker navigator(navcon::TrackerType::CARROT);
 
     auto params = navigator.get_controller_params();
     params.carrot_distance = 1.2f;
@@ -58,7 +58,7 @@ int main() {
         return 1;
     }
 
-    navcon::visualize::show_path(rec, make_visual_path(waypoints), "carrot_path", rerun::Color(255, 140, 0));
+    navcon::tracking::visualize::show_path(rec, make_visual_path(waypoints), "carrot_path", rerun::Color(255, 140, 0));
 
     auto set_navigation_goal = [&](size_t index) {
         navcon::NavigationGoal next_goal(waypoints[index], 0.25f, 0.3f);
@@ -67,7 +67,7 @@ int main() {
         navcon::Goal viz_goal;
         viz_goal.target_pose = concord::Pose{next_goal.target, concord::Euler{0.0f, 0.0f, 0.0f}};
         viz_goal.tolerance_position = next_goal.tolerance;
-        navcon::visualize::show_goal(rec, viz_goal, "carrot_goal", rerun::Color(255, 140, 0));
+        navcon::tracking::visualize::show_goal(rec, viz_goal, "carrot_goal", rerun::Color(255, 140, 0));
     };
 
     size_t waypoint_index = 0;
@@ -95,7 +95,7 @@ int main() {
 
             current_time += dt;
 
-            navcon::visualize::show_robot_state(rec, robot_state, "robot_carrot", rerun::Color(255, 165, 0));
+            navcon::tracking::visualize::show_robot_state(rec, robot_state, "robot_carrot", rerun::Color(255, 165, 0));
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
