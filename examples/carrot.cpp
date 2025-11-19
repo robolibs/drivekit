@@ -37,7 +37,7 @@ int main() {
 
     spdlog::info("Visualization initialized for Carrot demo");
 
-    navcon::Navcon navigator(navcon::NavconControllerType::CARROT);
+    navcon::Tracker navigator(navcon::TrackerType::CARROT);
 
     auto params = navigator.get_controller_params();
     params.carrot_distance = 1.2f;

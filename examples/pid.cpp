@@ -36,7 +36,7 @@ int main() {
 
     spdlog::info("Visualization initialized for PID demo");
 
-    navcon::Navcon navigator(navcon::NavconControllerType::PID);
+    navcon::Tracker navigator(navcon::TrackerType::PID);
 
     auto params = navigator.get_controller_params();
     params.linear_kp = 2.5f;

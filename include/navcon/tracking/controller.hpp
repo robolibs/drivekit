@@ -1,6 +1,6 @@
 #pragma once
 
-#include "navcon/types.hpp"
+#include "navcon/tracking/types.hpp"
 #include <cmath>
 #include <memory>
 

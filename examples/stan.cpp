@@ -30,7 +30,7 @@ int main() {
 
     spdlog::info("Visualization initialized for Stanley demo");
 
-    navcon::Navcon navigator(navcon::NavconControllerType::STANLEY);
+    navcon::Tracker navigator(navcon::TrackerType::STANLEY);
 
     auto params = navigator.get_controller_params();
     params.cross_track_gain = 2.5f;

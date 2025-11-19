@@ -30,7 +30,7 @@ int main() {
 
     spdlog::info("Visualization initialized for Pure Pursuit demo");
 
-    navcon::Navcon navigator(navcon::NavconControllerType::PURE_PURSUIT);
+    navcon::Tracker navigator(navcon::TrackerType::PURE_PURSUIT);
 
     auto params = navigator.get_controller_params();
     params.lookahead_distance = 2.5f;

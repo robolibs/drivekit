@@ -1,4 +1,4 @@
-#include "navcon.hpp"
+#include "navcon/tracker.hpp"
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -13,12 +13,12 @@ namespace navcon {
     PathGoal::PathGoal(std::vector<concord::Point> wp, float tol, float speed, bool l)
         : waypoints(std::move(wp)), tolerance(tol), max_speed(speed), loop(l) {}
 
-    // Navcon constructor
-    Navcon::Navcon(NavconControllerType type) : controller_type(type) {}
+    // Tracker constructor
+    Tracker::Tracker(TrackerType type) : controller_type(type) {}
 
     // Initialize with robot constraints and recording stream
-    void Navcon::init(const RobotConstraints &robot_constraints,
-                      std::shared_ptr<rerun::RecordingStream> recording_stream, const std::string &prefix) {
+    void Tracker::init(const RobotConstraints &robot_constraints,
+                       std::shared_ptr<rerun::RecordingStream> recording_stream, const std::string &prefix) {
         constraints_ = robot_constraints;
 #ifdef HAS_RERUN
         rec = recording_stream;
@@ -31,8 +31,8 @@ namespace navcon {
     }
 
     // Goal management
-    void Navcon::set_goal(const NavigationGoal &goal) {
-        std::cout << "Navcon: Setting goal to (" << goal.target.x << ", " << goal.target.y << ") with tolerance "
+    void Tracker::set_goal(const NavigationGoal &goal) {
+        std::cout << "Tracker: Setting goal to (" << goal.target.x << ", " << goal.target.y << ") with tolerance "
                   << goal.tolerance << std::endl;
         current_goal = goal;
         current_path.reset();
@@ -40,7 +40,7 @@ namespace navcon {
         path_completed = false;
     }
 
-    void Navcon::set_path(const PathGoal &path) {
+    void Tracker::set_path(const PathGoal &path) {
         current_path = path;
         current_goal.reset();
         current_waypoint_index = 0;
@@ -62,12 +62,12 @@ namespace navcon {
         }
     }
 
-    void Navcon::clear_goal() {
+    void Tracker::clear_goal() {
         current_goal.reset();
         goal_reached = false;
     }
 
-    void Navcon::clear_path() {
+    void Tracker::clear_path() {
         current_path.reset();
         current_waypoint_index = 0;
         path_completed = false;
@@ -80,7 +80,7 @@ namespace navcon {
     }
 
     // Navigation control - returns velocity command
-    VelocityCommand Navcon::tick(const RobotState &current_state, float dt) {
+    VelocityCommand Tracker::tick(const RobotState &current_state, float dt) {
         // Store current state for visualization
         current_state_ = current_state;
         VelocityCommand cmd;
@@ -98,10 +98,9 @@ namespace navcon {
 
         // Get current target goal
         Goal goal;
-        if (controller_type == NavconControllerType::PID || controller_type == NavconControllerType::CARROT) {
-            goal = get_current_navcon_goal(); // Point-based controllers need specific targets
-        } else if (controller_type == NavconControllerType::PURE_PURSUIT ||
-                   controller_type == NavconControllerType::STANLEY) {
+        if (controller_type == TrackerType::PID || controller_type == TrackerType::CARROT) {
+            goal = get_current_tracking_goal(); // Point-based controllers need specific targets
+        } else if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY) {
             // Pure Pursuit and Stanley use the path, but need goal set to END of path for goal-reached check
             if (current_path.has_value() && !current_path->waypoints.empty()) {
                 goal.target_pose = concord::Pose{current_path->waypoints.back(), concord::Euler{0.0f, 0.0f, 0.0f}};
@@ -122,34 +121,34 @@ namespace navcon {
     }
 
     // Status
-    bool Navcon::is_goal_reached() const { return goal_reached; }
+    bool Tracker::is_goal_reached() const { return goal_reached; }
 
-    bool Navcon::is_path_completed() const { return path_completed; }
+    bool Tracker::is_path_completed() const { return path_completed; }
 
     // Controller configuration
-    void Navcon::set_controller_type(NavconControllerType type) {
+    void Tracker::set_controller_type(TrackerType type) {
         controller_type = type;
         create_controller();
     }
 
-    void Navcon::set_controller_params(const ControllerParams &new_params) { params = new_params; }
+    void Tracker::set_controller_params(const ControllerParams &new_params) { params = new_params; }
 
-    const Navcon::ControllerParams &Navcon::get_controller_params() const { return params; }
+    const Tracker::ControllerParams &Tracker::get_controller_params() const { return params; }
 
     // Status information
-    float Navcon::get_distance_to_goal() const {
+    float Tracker::get_distance_to_goal() const {
         // This method needs to be called with a robot state parameter
         // For now, return a placeholder value
         return std::numeric_limits<float>::infinity();
     }
 
-    float Navcon::get_distance_to_current_waypoint() const {
+    float Tracker::get_distance_to_current_waypoint() const {
         // This method needs to be called with a robot state parameter
         // For now, return a placeholder value
         return std::numeric_limits<float>::infinity();
     }
 
-    concord::Point Navcon::get_current_target() const {
+    concord::Point Tracker::get_current_target() const {
         if (current_goal.has_value()) {
             return current_goal->target;
         } else if (current_path.has_value() && current_waypoint_index < current_path->waypoints.size()) {
@@ -159,13 +158,13 @@ namespace navcon {
     }
 
     // Emergency stop
-    void Navcon::emergency_stop() {
+    void Tracker::emergency_stop() {
         clear_goal();
         clear_path();
     }
 
     // Smoothen path by adding interpolated points between waypoints
-    void Navcon::smoothen(float interval_cm) {
+    void Tracker::smoothen(float interval_cm) {
         if (!current_path.has_value() || current_path->waypoints.size() < 2) {
             return;
         }
@@ -223,13 +222,13 @@ namespace navcon {
         }
     }
 
-    // Direct access to simple controller
-    tracking::Controller *Navcon::get_controller() { return controller.get(); }
+    // Direct access to controller
+    tracking::Controller *Tracker::get_controller() { return controller.get(); }
 
-    const tracking::Controller *Navcon::get_controller() const { return controller.get(); }
+    const tracking::Controller *Tracker::get_controller() const { return controller.get(); }
 
     // Visualization
-    void Navcon::tock() const {
+    void Tracker::tock() const {
 #ifdef HAS_RERUN
         if (!rec) {
             return;
@@ -324,7 +323,7 @@ namespace navcon {
     }
 
     // Internal helper methods
-    Goal Navcon::get_current_navcon_goal() const {
+    Goal Tracker::get_current_tracking_goal() const {
         Goal goal;
 
         if (current_goal.has_value()) {
@@ -339,7 +338,7 @@ namespace navcon {
         return goal;
     }
 
-    void Navcon::update_waypoint_progress(const RobotState &current_state) {
+    void Tracker::update_waypoint_progress(const RobotState &current_state) {
         if (!current_path.has_value() || current_waypoint_index >= current_path->waypoints.size()) {
             return;
         }
@@ -375,11 +374,11 @@ namespace navcon {
         }
     }
 
-    void Navcon::create_controller() {
+    void Tracker::create_controller() {
         ControllerConfig config;
 
         switch (controller_type) {
-        case NavconControllerType::PID:
+        case TrackerType::PID:
             std::cout << "Creating PID controller..." << std::endl;
             config.kp_linear = params.linear_kp;
             config.ki_linear = params.linear_ki;
@@ -392,7 +391,7 @@ namespace navcon {
             std::cout << "PID controller created: " << (controller ? "success" : "failed") << std::endl;
             break;
 
-        case NavconControllerType::PURE_PURSUIT:
+        case TrackerType::PURE_PURSUIT:
             std::cout << "Creating Pure Pursuit controller..." << std::endl;
             config.lookahead_distance = params.lookahead_distance;
             config.goal_tolerance = 0.5f;
@@ -402,7 +401,7 @@ namespace navcon {
             std::cout << "Pure Pursuit controller created: " << (controller ? "success" : "failed") << std::endl;
             break;
 
-        case NavconControllerType::STANLEY:
+        case TrackerType::STANLEY:
             std::cout << "Creating Stanley controller..." << std::endl;
             config.k_cross_track = params.cross_track_gain;
             config.k_heading = params.softening_gain;
@@ -414,7 +413,7 @@ namespace navcon {
             std::cout << "Stanley controller created: " << (controller ? "success" : "failed") << std::endl;
             break;
 
-        case NavconControllerType::CARROT:
+        case TrackerType::CARROT:
             config.lookahead_distance = params.carrot_distance;
             controller = std::make_unique<tracking::point::CarrotFollower>();
             controller->set_config(config);
@@ -422,7 +421,7 @@ namespace navcon {
         }
     }
 
-    void Navcon::update_goal_status(const RobotState &current_state) {
+    void Tracker::update_goal_status(const RobotState &current_state) {
         // Check goal completion
         if (current_goal.has_value()) {
             const concord::Point &robot_pos = current_state.pose.point;
