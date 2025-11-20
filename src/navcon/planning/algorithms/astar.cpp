@@ -1,5 +1,4 @@
 #include "navcon/planning/algorithms/astar.hpp"
-#include <iostream>
 
 namespace navcon {
     namespace planning {
@@ -11,8 +10,6 @@ namespace navcon {
                 current_path_.waypoints.clear();
 
                 // TODO: Implement A* algorithm
-                std::cout << "A* planning not yet implemented - returning straight line" << std::endl;
-
                 // For now, just return a straight line path
                 current_path_.waypoints.push_back(start);
                 current_path_.waypoints.push_back(goal);

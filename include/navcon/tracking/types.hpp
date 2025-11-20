@@ -20,6 +20,12 @@ namespace navcon {
             VELOCITY_COMMAND // Linear + angular velocity
         };
 
+        // Output units mode
+        enum class OutputUnits {
+            NORMALIZED, // Output in range [-1, 1] (default for most simulators)
+            PHYSICAL    // Output in physical units (m/s, rad/s) - standard for real robots
+        };
+
         // Base control output
         struct ControlOutput {
             bool valid = false;
@@ -29,15 +35,18 @@ namespace navcon {
 
         // Velocity-based output (twist)
         struct VelocityCommand : public ControlOutput {
-            double linear_velocity = 0.0;  // m/s
-            double angular_velocity = 0.0; // rad/s
-            double lateral_velocity = 0.0; // m/s (holonomic only)
+            double linear_velocity = 0.0;  // Either normalized [-1,1] or m/s depending on mode
+            double angular_velocity = 0.0; // Either normalized [-1,1] or rad/s depending on mode
+            double lateral_velocity = 0.0; // Either normalized [-1,1] or m/s depending on mode
 
             inline VelocityCommand() { type = OutputType::VELOCITY_COMMAND; }
         };
 
         // Controller configuration
         struct ControllerConfig {
+            // Output units mode
+            OutputUnits output_units = OutputUnits::NORMALIZED; // Default: normalized [-1, 1]
+
             // PID gains
             double kp_linear = 1.0;
             double ki_linear = 0.0;
@@ -72,6 +81,7 @@ namespace navcon {
     // Convenience aliases in navcon namespace for backward compatibility
     using Goal = tracking::Goal;
     using OutputType = tracking::OutputType;
+    using OutputUnits = tracking::OutputUnits;
     using ControlOutput = tracking::ControlOutput;
     using VelocityCommand = tracking::VelocityCommand;
     using ControllerConfig = tracking::ControllerConfig;

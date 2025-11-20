@@ -1,4 +1,5 @@
 #include "navcon/tracking/path/pure_pursuit.hpp"
+#include "navcon/tracking/types.hpp"
 #include <algorithm>
 #include <iostream>
 
@@ -10,20 +11,36 @@ namespace navcon {
                                                                  const RobotConstraints &constraints, double dt) {
                 VelocityCommand cmd;
 
-                // Get target point using improved lookahead algorithm
+                // Get wheelbase (distance between front and rear axles)
+                double wheelbase = constraints.wheelbase > 0.0 ? constraints.wheelbase : 1.0;
+
+                // Calculate rear axle position (reference point for Pure Pursuit)
+                // This is more accurate than using the center of the robot
+                double rear_x = current_state.pose.point.x - (wheelbase / 2.0) * std::cos(current_state.pose.angle.yaw);
+                double rear_y = current_state.pose.point.y - (wheelbase / 2.0) * std::sin(current_state.pose.angle.yaw);
+
+                Point rear_axle{rear_x, rear_y};
+
+                // Dynamic lookahead distance based on velocity (adaptive)
+                // Lf = k * v + Lfc (from PythonRobotics)
+                double k_lookahead = 0.1; // Velocity gain (configurable)
+                double current_velocity = std::abs(current_state.velocity.linear);
+                double base_lookahead = config_.lookahead_distance;
+                double lookahead_distance = k_lookahead * current_velocity + base_lookahead;
+
+                // Clamp lookahead distance to reasonable bounds
+                lookahead_distance = std::clamp(lookahead_distance, base_lookahead, base_lookahead * 3.0);
+
+                // Get target point using lookahead algorithm
                 Point target_point;
                 bool has_path = !path_.waypoints.empty();
-                double lookahead_distance = config_.lookahead_distance;
-                double robot_length = constraints.robot_length > 0.0
-                                          ? constraints.robot_length
-                                          : (constraints.wheelbase > 0.0 ? constraints.wheelbase : 1.0);
-                double progress_distance = compute_progress_distance(robot_length);
+                double progress_distance = wheelbase * 1.5; // Smaller progress threshold
 
                 if (has_path) {
-                    auto lookahead_result =
-                        find_lookahead_point(current_state.pose, lookahead_distance, progress_distance);
+                    auto lookahead_result = find_lookahead_point(rear_axle, current_state.pose.angle.yaw,
+                                                                 lookahead_distance, progress_distance);
                     if (!lookahead_result.has_value()) {
-                        // Reached end of path
+                        // Reached end of path, target the goal
                         target_point = goal.target_pose.point;
                     } else {
                         target_point = lookahead_result.value();
@@ -41,41 +58,60 @@ namespace navcon {
                     return cmd;
                 }
 
-                // Transform target to robot's local frame
-                double dx_global = target_point.x - current_state.pose.point.x;
-                double dy_global = target_point.y - current_state.pose.point.y;
+                // Calculate angle to target from rear axle (alpha)
+                double dx = target_point.x - rear_x;
+                double dy = target_point.y - rear_y;
+                double alpha = std::atan2(dy, dx) - current_state.pose.angle.yaw;
 
-                double cos_theta = std::cos(current_state.pose.angle.yaw);
-                double sin_theta = std::sin(current_state.pose.angle.yaw);
-
-                double dx_local = cos_theta * dx_global + sin_theta * dy_global;
-                double dy_local = -sin_theta * dx_global + cos_theta * dy_global;
-
-                // Calculate curvature using aggressive pure pursuit formula for sharp turning
-                // Much more aggressive curvature calculation - use shorter effective distance for sharper turns
-                double curvature = 2.0 * dy_local / (lookahead_distance * lookahead_distance);
-
-                // Amplify curvature for more aggressive turning
-                double curvature_multiplier = 2.5; // Make turning much more aggressive
-                curvature *= curvature_multiplier;
+                // Normalize alpha to [-pi, pi]
+                alpha = normalize_angle(alpha);
 
                 // Update status
                 status_.distance_to_goal = current_state.pose.point.distance_to(goal.target_pose.point);
-                status_.cross_track_error = std::abs(dy_local);
+                status_.cross_track_error = std::abs(std::sin(alpha) * std::hypot(dx, dy));
                 status_.goal_reached = false;
                 status_.mode = "pure_pursuit";
 
-                // Apply pure pursuit control for velocity command
-                // Maintain constant speed for more aggressive turning
-                cmd.linear_velocity = constraints.max_linear_velocity;
+                // Calculate desired angular velocity
+                double angular_physical;
+                double linear_physical;
 
-                // Much more aggressive angular velocity from curvature
-                cmd.angular_velocity = curvature * cmd.linear_velocity;
+                // For differential drive: use proportional control on angle error
+                // This works better than Pure Pursuit curvature formula for low-speed robots
 
-                // Increase angular velocity limits for sharper turns
-                double aggressive_angular_limit = constraints.max_angular_velocity * 1.5; // 50% more aggressive
-                cmd.angular_velocity =
-                    std::clamp(cmd.angular_velocity, -aggressive_angular_limit, aggressive_angular_limit);
+                // Calculate base angular command proportional to alpha
+                // Use a high gain to ensure we can reach full angular velocity
+                double kp_angular = 2.5; // Proportional gain for angular control
+                angular_physical = kp_angular * alpha;
+
+                // Clamp to maximum angular velocity
+                angular_physical =
+                    std::clamp(angular_physical, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+
+                // Adjust linear velocity based on how much we need to turn
+                double alpha_magnitude = std::abs(alpha);
+
+                if (alpha_magnitude > M_PI * 0.66) {
+                    // Very sharp turn (> 120°): slow down a lot
+                    linear_physical = constraints.max_linear_velocity * 0.3;
+                } else if (alpha_magnitude > M_PI / 3.0) {
+                    // Moderate turn (> 60°): slow down moderately
+                    linear_physical = constraints.max_linear_velocity * 0.6;
+                } else {
+                    // Gentle turn: maintain speed
+                    linear_physical = constraints.max_linear_velocity;
+                }
+
+                // Convert to output units based on configuration
+                if (config_.output_units == OutputUnits::NORMALIZED) {
+                    // Normalize to [-1, 1]
+                    cmd.linear_velocity = linear_physical / constraints.max_linear_velocity;
+                    cmd.angular_velocity = angular_physical / constraints.max_angular_velocity;
+                } else {
+                    // Physical units (m/s, rad/s)
+                    cmd.linear_velocity = linear_physical;
+                    cmd.angular_velocity = angular_physical;
+                }
 
                 cmd.valid = true;
                 cmd.status_message = "Following path";
@@ -85,78 +121,144 @@ namespace navcon {
 
             std::string PurePursuitFollower::get_type() const { return "pure_pursuit_follower"; }
 
-            std::optional<Point> PurePursuitFollower::find_lookahead_point(const Pose &current_pose,
+            std::optional<Point> PurePursuitFollower::find_lookahead_point(const Point &rear_axle, double current_yaw,
                                                                            double lookahead_distance,
                                                                            double progress_distance) {
                 if (path_.waypoints.empty()) return std::nullopt;
 
-                // FIXED waypoint progression: advance when close OR when we've passed the waypoint
-                // This prevents the robot from getting stuck targeting the first waypoint
+                // Update path index: advance when we've passed waypoints
+                // Use rear axle position for consistency
                 while (path_index_ < path_.waypoints.size() - 1) {
                     Point current_waypoint = path_.waypoints[path_index_].point;
                     Point next_waypoint = path_.waypoints[path_index_ + 1].point;
 
-                    double dist_to_current = current_pose.point.distance_to(current_waypoint);
+                    double dist_to_current = rear_axle.distance_to(current_waypoint);
 
-                    // Check if we've passed the waypoint by looking at the dot product
-                    double dx_to_current = current_waypoint.x - current_pose.point.x;
-                    double dy_to_current = current_waypoint.y - current_pose.point.y;
-                    double dx_to_next = next_waypoint.x - current_waypoint.x;
-                    double dy_to_next = next_waypoint.y - current_waypoint.y;
+                    // Vector from robot to current waypoint
+                    double dx_to_current = current_waypoint.x - rear_axle.x;
+                    double dy_to_current = current_waypoint.y - rear_axle.y;
 
-                    // If dot product is negative, we've passed the waypoint
-                    double dot_product = dx_to_current * dx_to_next + dy_to_current * dy_to_next;
+                    // Vector from current to next waypoint (path direction)
+                    double dx_path = next_waypoint.x - current_waypoint.x;
+                    double dy_path = next_waypoint.y - current_waypoint.y;
 
-                    // Advance if: close to waypoint OR passed it OR too far away (stuck)
-                    if (dist_to_current < progress_distance || dot_product < 0 || dist_to_current > 15.0) {
+                    // Dot product: negative means we've passed the waypoint
+                    double dot_product = dx_to_current * dx_path + dy_to_current * dy_path;
+
+                    // Advance if: very close to waypoint OR passed it
+                    if (dist_to_current < progress_distance || dot_product < 0) {
                         path_index_++;
                     } else {
                         break;
                     }
                 }
 
-                // Find lookahead point starting from current path index
-                double accumulated_distance = 0.0;
-                Point start_point = path_.waypoints[path_index_].point;
+                // Search for lookahead point along the path
+                // Start from current waypoint position
+                Point search_start = rear_axle;
+                double min_dist_diff = std::numeric_limits<double>::max();
+                std::optional<Point> best_point;
 
-                // Check if we can use the current waypoint directly (if it's far enough)
-                double dist_to_start = current_pose.point.distance_to(start_point);
-                if (dist_to_start >= lookahead_distance * 0.8) {
-                    return start_point; // Use current waypoint if it's at good lookahead distance
-                }
+                // Search forward from current path index
+                for (size_t i = path_index_; i < path_.waypoints.size(); ++i) {
+                    Point waypoint = path_.waypoints[i].point;
+                    double dist = rear_axle.distance_to(waypoint);
 
-                // Otherwise, find interpolated lookahead point along path
-                Point last_point = start_point;
-
-                for (size_t i = path_index_ + 1; i < path_.waypoints.size(); ++i) {
-                    Point current_point = path_.waypoints[i].point;
-                    double segment_length = last_point.distance_to(current_point);
-
-                    if (accumulated_distance + segment_length >= lookahead_distance) {
-                        // Interpolate point on this segment
-                        double remaining = lookahead_distance - accumulated_distance;
-                        double t = segment_length > 0 ? remaining / segment_length : 0.0;
-
-                        Point lookahead;
-                        lookahead.x = last_point.x + t * (current_point.x - last_point.x);
-                        lookahead.y = last_point.y + t * (current_point.y - last_point.y);
-                        return lookahead;
+                    // Find point closest to desired lookahead distance
+                    double dist_diff = std::abs(dist - lookahead_distance);
+                    if (dist_diff < min_dist_diff && dist >= lookahead_distance * 0.5) {
+                        min_dist_diff = dist_diff;
+                        best_point = waypoint;
                     }
 
-                    accumulated_distance += segment_length;
-                    last_point = current_point;
+                    // Also check interpolated points on segments
+                    if (i < path_.waypoints.size() - 1) {
+                        Point next_waypoint = path_.waypoints[i + 1].point;
+
+                        // Check if lookahead circle intersects this segment
+                        auto intersection =
+                            find_circle_segment_intersection(rear_axle, lookahead_distance, waypoint, next_waypoint);
+
+                        if (intersection.has_value()) {
+                            double dist_to_intersection = rear_axle.distance_to(intersection.value());
+                            double diff = std::abs(dist_to_intersection - lookahead_distance);
+                            if (diff < min_dist_diff) {
+                                min_dist_diff = diff;
+                                best_point = intersection.value();
+                            }
+                        }
+                    }
+
+                    // Stop searching if we're way past the lookahead distance
+                    if (dist > lookahead_distance * 2.0) {
+                        break;
+                    }
                 }
 
-                // If we've reached the end of the path, return the last waypoint
-                return path_.waypoints.back().point;
+                // If no good point found, use the furthest visible waypoint
+                if (!best_point.has_value() && path_index_ < path_.waypoints.size()) {
+                    best_point = path_.waypoints.back().point;
+                }
+
+                return best_point;
             }
 
-            double PurePursuitFollower::compute_progress_distance(double robot_length) const {
-                double length_based = robot_length * 2.5;
-                if (length_based <= 0.0) {
-                    length_based = 1.0;
+            // Helper: find intersection between circle and line segment
+            std::optional<Point> PurePursuitFollower::find_circle_segment_intersection(const Point &circle_center,
+                                                                                       double radius,
+                                                                                       const Point &segment_start,
+                                                                                       const Point &segment_end) {
+
+                // Vector from segment start to end
+                double dx = segment_end.x - segment_start.x;
+                double dy = segment_end.y - segment_start.y;
+                double segment_length = std::hypot(dx, dy);
+
+                if (segment_length < 1e-6) {
+                    return std::nullopt;
                 }
-                return std::max(length_based, config_.lookahead_distance);
+
+                // Normalize direction
+                dx /= segment_length;
+                dy /= segment_length;
+
+                // Vector from segment start to circle center
+                double fx = circle_center.x - segment_start.x;
+                double fy = circle_center.y - segment_start.y;
+
+                // Project circle center onto segment line
+                double projection = fx * dx + fy * dy;
+
+                // Find closest point on infinite line
+                double closest_x = segment_start.x + projection * dx;
+                double closest_y = segment_start.y + projection * dy;
+
+                // Distance from circle center to line
+                double dist_to_line = std::hypot(circle_center.x - closest_x, circle_center.y - closest_y);
+
+                // No intersection if line is too far from circle
+                if (dist_to_line > radius) {
+                    return std::nullopt;
+                }
+
+                // Calculate intersection point(s)
+                double half_chord = std::sqrt(radius * radius - dist_to_line * dist_to_line);
+
+                // Two potential intersection points
+                double t1 = projection - half_chord;
+                double t2 = projection + half_chord;
+
+                // Use the furthest intersection that's still on the segment
+                // (we want to look ahead, not behind)
+                std::optional<Point> result;
+
+                if (t2 >= 0 && t2 <= segment_length) {
+                    result = Point{segment_start.x + t2 * dx, segment_start.y + t2 * dy};
+                } else if (t1 >= 0 && t1 <= segment_length) {
+                    result = Point{segment_start.x + t1 * dx, segment_start.y + t1 * dy};
+                }
+
+                return result;
             }
 
         } // namespace path
