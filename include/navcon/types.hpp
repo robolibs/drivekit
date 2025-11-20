@@ -24,7 +24,8 @@ namespace navcon {
     struct RobotState {
         Pose pose;
         Velocity velocity;
-        double timestamp = 0.0; // Time in seconds
+        double timestamp = 0.0;     // Time in seconds
+        bool allow_reverse = false; // Allow backward maneuvers for tight turns
     };
 
     // Path specification
@@ -59,9 +60,6 @@ namespace navcon {
 
         double robot_width = 0.0;  // Robot width
         double robot_length = 0.0; // Robot length
-
-        // Behavior flags
-        bool allow_reverse = false; // Allow backward maneuvers for tight turns
     };
 
 } // namespace navcon
