@@ -80,7 +80,8 @@ namespace navcon {
     }
 
     // Navigation control - returns velocity command
-    VelocityCommand Tracker::tick(const RobotState &current_state, float dt) {
+    VelocityCommand Tracker::tick(const RobotState &current_state, float dt,
+                                  const WorldConstraints *dynamic_constraints) {
         // Store current state for visualization
         current_state_ = current_state;
         VelocityCommand cmd;
@@ -110,8 +111,8 @@ namespace navcon {
 
         // Compute control command
         if (controller) {
-            // Use simple controller
-            cmd = controller->compute_control(current_state, goal, constraints_, dt);
+            // Use simple controller, pass dynamic constraints if available
+            cmd = controller->compute_control(current_state, goal, constraints_, dt, dynamic_constraints);
         }
 
         // Update goal status

@@ -115,7 +115,9 @@ namespace navcon {
         void clear_path();
 
         // Navigation control - returns velocity command
-        VelocityCommand tick(const RobotState &current_state, float dt);
+        // dynamic_constraints: optional runtime constraints (obstacles, speed limits, etc.)
+        VelocityCommand tick(const RobotState &current_state, float dt,
+                             const WorldConstraints *dynamic_constraints = nullptr);
 
         // Status
         bool is_goal_reached() const;

@@ -13,8 +13,10 @@ namespace navcon {
             virtual ~Controller() = default;
 
             // Main control computation
+            // dynamic_constraints is optional - only needed for advanced controllers like MPC
             virtual VelocityCommand compute_control(const RobotState &current_state, const Goal &goal,
-                                                    const RobotConstraints &constraints, double dt) = 0;
+                                                    const RobotConstraints &constraints, double dt,
+                                                    const WorldConstraints *dynamic_constraints = nullptr) = 0;
 
             // Optional path following
             virtual void set_path(const Path &path) {
