@@ -361,7 +361,7 @@ namespace navcon {
         if (distance <= current_path->tolerance) {
             std::cout << "WAYPOINT REACHED! Moving to next waypoint. Index was " << current_waypoint_index;
             current_waypoint_index++;
-            std::cout << ", now " << current_waypoint_index << std::endl;
+            // DEBUG:             std::cout << ", now " << current_waypoint_index << std::endl;
 
             // Check if we've completed the path
             if (current_waypoint_index >= current_path->waypoints.size()) {
@@ -379,7 +379,7 @@ namespace navcon {
 
         switch (controller_type) {
         case TrackerType::PID:
-            std::cout << "Creating PID controller..." << std::endl;
+            // DEBUG:             std::cout << "Creating PID controller..." << std::endl;
             config.kp_linear = params.linear_kp;
             config.ki_linear = params.linear_ki;
             config.kd_linear = params.linear_kd;
@@ -388,21 +388,23 @@ namespace navcon {
             config.kd_angular = params.angular_kd;
             controller = std::make_unique<tracking::point::PIDFollower>();
             controller->set_config(config);
-            std::cout << "PID controller created: " << (controller ? "success" : "failed") << std::endl;
+            // DEBUG:             std::cout << "PID controller created: " << (controller ? "success" : "failed") <<
+            // std::endl;
             break;
 
         case TrackerType::PURE_PURSUIT:
-            std::cout << "Creating Pure Pursuit controller..." << std::endl;
+            // DEBUG:             std::cout << "Creating Pure Pursuit controller..." << std::endl;
             config.lookahead_distance = params.lookahead_distance;
             config.goal_tolerance = 0.5f;
             config.angular_tolerance = 0.1f;
             controller = std::make_unique<tracking::path::PurePursuitFollower>();
             controller->set_config(config);
-            std::cout << "Pure Pursuit controller created: " << (controller ? "success" : "failed") << std::endl;
+            // DEBUG:             std::cout << "Pure Pursuit controller created: " << (controller ? "success" :
+            // "failed") << std::endl;
             break;
 
         case TrackerType::STANLEY:
-            std::cout << "Creating Stanley controller..." << std::endl;
+            // DEBUG:             std::cout << "Creating Stanley controller..." << std::endl;
             config.k_cross_track = params.cross_track_gain;
             config.k_heading = params.softening_gain;
             config.goal_tolerance = 0.5f;
@@ -410,7 +412,8 @@ namespace navcon {
             config.allow_reverse = false; // Can be enabled if needed
             controller = std::make_unique<tracking::path::StanleyFollower>();
             controller->set_config(config);
-            std::cout << "Stanley controller created: " << (controller ? "success" : "failed") << std::endl;
+            // DEBUG:             std::cout << "Stanley controller created: " << (controller ? "success" : "failed") <<
+            // std::endl;
             break;
 
         case TrackerType::CARROT:

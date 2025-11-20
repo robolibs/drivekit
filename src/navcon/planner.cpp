@@ -23,13 +23,15 @@ namespace navcon {
 
     // Goal management
     void Planner::set_start(const Pose &start) {
-        std::cout << "Planner: Setting start to (" << start.point.x << ", " << start.point.y << ")" << std::endl;
+        // DEBUG:         std::cout << "Planner: Setting start to (" << start.point.x << ", " << start.point.y << ")" <<
+        // std::endl;
         start_pose = start;
         planning_complete = false;
     }
 
     void Planner::set_goal(const Pose &goal) {
-        std::cout << "Planner: Setting goal to (" << goal.point.x << ", " << goal.point.y << ")" << std::endl;
+        // DEBUG:         std::cout << "Planner: Setting goal to (" << goal.point.x << ", " << goal.point.y << ")" <<
+        // std::endl;
         goal_pose = goal;
         planning_complete = false;
     }
@@ -49,7 +51,7 @@ namespace navcon {
         planning_complete = false;
 
         if (!start_pose.has_value() || !goal_pose.has_value()) {
-            std::cout << "Planner: Cannot plan without start and goal" << std::endl;
+            // DEBUG:             std::cout << "Planner: Cannot plan without start and goal" << std::endl;
             return Path{};
         }
 
@@ -163,15 +165,15 @@ namespace navcon {
     void Planner::create_planner() {
         switch (planner_type) {
         case PlannerType::ASTAR:
-            std::cout << "Creating A* planner..." << std::endl;
+            // DEBUG:             std::cout << "Creating A* planner..." << std::endl;
             controller = std::make_unique<planning::algorithms::AStarPlanner>();
             break;
         case PlannerType::RRT:
-            std::cout << "Creating RRT planner (not yet implemented)..." << std::endl;
+            // DEBUG:             std::cout << "Creating RRT planner (not yet implemented)..." << std::endl;
             controller = std::make_unique<planning::algorithms::AStarPlanner>(); // Fallback
             break;
         case PlannerType::PRM:
-            std::cout << "Creating PRM planner (not yet implemented)..." << std::endl;
+            // DEBUG:             std::cout << "Creating PRM planner (not yet implemented)..." << std::endl;
             controller = std::make_unique<planning::algorithms::AStarPlanner>(); // Fallback
             break;
         }
