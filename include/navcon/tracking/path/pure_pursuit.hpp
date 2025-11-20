@@ -23,10 +23,14 @@ namespace navcon {
                 std::string get_type() const override;
 
               private:
-                std::optional<Point> find_lookahead_point(const Pose &current_pose, double lookahead_distance,
-                                                          double progress_distance);
+                // Find lookahead point from rear axle position
+                std::optional<Point> find_lookahead_point(const Point &rear_axle, double current_yaw,
+                                                          double lookahead_distance, double progress_distance);
 
-                double compute_progress_distance(double robot_length) const;
+                // Helper: find intersection between lookahead circle and path segment
+                std::optional<Point> find_circle_segment_intersection(const Point &circle_center, double radius,
+                                                                      const Point &segment_start,
+                                                                      const Point &segment_end);
             };
 
         } // namespace path

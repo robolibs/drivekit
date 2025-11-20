@@ -37,15 +37,6 @@ namespace navcon {
                 // Calculate heading error
                 double heading_error = normalize_angle(path_heading - current_state.pose.angle.yaw);
 
-                // Debug output
-                static int debug_count = 0;
-                if (debug_count % 50 == 0) {
-                    std::cout << "Stanley: CTE=" << cross_track_error << ", heading_err=" << heading_error
-                              << ", path_heading=" << path_heading << ", robot_yaw=" << current_state.pose.angle.yaw
-                              << std::endl;
-                }
-                debug_count++;
-
                 // Determine if we should move forward or backward based on path direction
                 double velocity_direction = 1.0;
                 if (config_.allow_reverse) {
