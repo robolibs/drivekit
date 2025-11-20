@@ -9,7 +9,8 @@ namespace navcon {
         namespace path {
 
             VelocityCommand StanleyFollower::compute_control(const RobotState &current_state, const Goal &goal,
-                                                             const RobotConstraints &constraints, double dt) {
+                                                             const RobotConstraints &constraints, double dt,
+                                                             const WorldConstraints *dynamic_constraints) {
                 VelocityCommand cmd;
 
                 // Check if we have a path
