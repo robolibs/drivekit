@@ -436,6 +436,19 @@ namespace navcon {
             controller->set_config(config);
 #endif
             break;
+
+        case TrackerType::MPC:
+#ifdef HAS_MPC
+            config.goal_tolerance = 0.5f;
+            config.angular_tolerance = 0.1f;
+            controller = std::make_unique<tracking::path::MPCFollower>();
+            controller->set_config(config);
+#else
+            // Fallback to Pure Pursuit if MPC not available
+            controller = std::make_unique<tracking::path::PurePursuitFollower>();
+            controller->set_config(config);
+#endif
+            break;
         }
     }
 
