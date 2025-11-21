@@ -101,8 +101,9 @@ namespace navcon {
         Goal goal;
         if (controller_type == TrackerType::PID || controller_type == TrackerType::CARROT) {
             goal = get_current_tracking_goal(); // Point-based controllers need specific targets
-        } else if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY) {
-            // Pure Pursuit and Stanley use the path, but need goal set to END of path for goal-reached check
+        } else if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
+                   controller_type == TrackerType::LQR) {
+            // Pure Pursuit, Stanley, and LQR use the path, but need goal set to END of path for goal-reached check
             if (current_path.has_value() && !current_path->waypoints.empty()) {
                 goal.target_pose = concord::Pose{current_path->waypoints.back(), concord::Euler{0.0f, 0.0f, 0.0f}};
                 goal.tolerance_position = current_path->tolerance;
@@ -421,6 +422,19 @@ namespace navcon {
             config.lookahead_distance = params.carrot_distance;
             controller = std::make_unique<tracking::point::CarrotFollower>();
             controller->set_config(config);
+            break;
+
+        case TrackerType::LQR:
+#ifdef HAS_LQR
+            config.goal_tolerance = 0.5f;
+            config.angular_tolerance = 0.1f;
+            controller = std::make_unique<tracking::path::LQRFollower>();
+            controller->set_config(config);
+#else
+            // Fallback to Pure Pursuit if LQR not available
+            controller = std::make_unique<tracking::path::PurePursuitFollower>();
+            controller->set_config(config);
+#endif
             break;
         }
     }

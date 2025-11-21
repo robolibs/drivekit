@@ -6,6 +6,9 @@
 #include "navcon/tracking/path/stanley.hpp"
 #include "navcon/tracking/point/carrot.hpp"
 #include "navcon/tracking/point/pid.hpp"
+#ifdef HAS_LQR
+#include "navcon/tracking/path/lqr.hpp"
+#endif
 #include "navcon/tracking/types.hpp"
 #include "navcon/types.hpp"
 #include <cmath>
@@ -45,7 +48,7 @@ namespace navcon {
     };
 
     // Controller types for tracking
-    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT };
+    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT, LQR };
 
     // ============================================================================
     // Tracker - High-level path/point tracking controller
