@@ -6,6 +6,12 @@
 #include "navcon/tracking/path/stanley.hpp"
 #include "navcon/tracking/point/carrot.hpp"
 #include "navcon/tracking/point/pid.hpp"
+#ifdef HAS_LQR
+#include "navcon/tracking/path/lqr.hpp"
+#endif
+#ifdef HAS_MPC
+#include "navcon/tracking/path/mpc.hpp"
+#endif
 #include "navcon/tracking/types.hpp"
 #include "navcon/types.hpp"
 #include <cmath>
@@ -45,7 +51,7 @@ namespace navcon {
     };
 
     // Controller types for tracking
-    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT };
+    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT, LQR, MPC };
 
     // ============================================================================
     // Tracker - High-level path/point tracking controller
@@ -115,7 +121,9 @@ namespace navcon {
         void clear_path();
 
         // Navigation control - returns velocity command
-        VelocityCommand tick(const RobotState &current_state, float dt);
+        // dynamic_constraints: optional runtime constraints (obstacles, speed limits, etc.)
+        VelocityCommand tick(const RobotState &current_state, float dt,
+                             const WorldConstraints *dynamic_constraints = nullptr);
 
         // Status
         bool is_goal_reached() const;

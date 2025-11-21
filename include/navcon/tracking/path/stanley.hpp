@@ -20,7 +20,8 @@ namespace navcon {
                 using Base::status_;
 
                 VelocityCommand compute_control(const RobotState &current_state, const Goal &goal,
-                                                const RobotConstraints &constraints, double dt) override;
+                                                const RobotConstraints &constraints, double dt,
+                                                const WorldConstraints *dynamic_constraints = nullptr) override;
 
                 std::string get_type() const override;
 

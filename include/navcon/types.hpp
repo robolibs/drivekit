@@ -35,7 +35,7 @@ namespace navcon {
         bool is_closed = false;     // Loop back to start
     };
 
-    // Robot physical parameters
+    // Robot physical parameters (static, set at initialization)
     struct RobotConstraints {
         // Kinematic parameters
         double wheelbase = 1.0;    // Distance between axles (m)
@@ -60,6 +60,17 @@ namespace navcon {
 
         double robot_width = 0.0;  // Robot width
         double robot_length = 0.0; // Robot length
+    };
+
+    // Zone representation for world constraints
+    struct Zone {
+        std::vector<Point> boundary; // Polygon boundary
+        double max_speed = 0.0;      // Maximum speed in zone (0 = forbidden/no-go zone)
+    };
+
+    // World constraints (can change at every tick - obstacles, zones, etc.)
+    struct WorldConstraints {
+        std::vector<Zone> zones; // Dynamic zones (no-go areas, speed limits, etc.)
     };
 
 } // namespace navcon

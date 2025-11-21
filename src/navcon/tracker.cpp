@@ -80,7 +80,8 @@ namespace navcon {
     }
 
     // Navigation control - returns velocity command
-    VelocityCommand Tracker::tick(const RobotState &current_state, float dt) {
+    VelocityCommand Tracker::tick(const RobotState &current_state, float dt,
+                                  const WorldConstraints *dynamic_constraints) {
         // Store current state for visualization
         current_state_ = current_state;
         VelocityCommand cmd;
@@ -100,8 +101,9 @@ namespace navcon {
         Goal goal;
         if (controller_type == TrackerType::PID || controller_type == TrackerType::CARROT) {
             goal = get_current_tracking_goal(); // Point-based controllers need specific targets
-        } else if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY) {
-            // Pure Pursuit and Stanley use the path, but need goal set to END of path for goal-reached check
+        } else if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
+                   controller_type == TrackerType::LQR) {
+            // Pure Pursuit, Stanley, and LQR use the path, but need goal set to END of path for goal-reached check
             if (current_path.has_value() && !current_path->waypoints.empty()) {
                 goal.target_pose = concord::Pose{current_path->waypoints.back(), concord::Euler{0.0f, 0.0f, 0.0f}};
                 goal.tolerance_position = current_path->tolerance;
@@ -110,8 +112,8 @@ namespace navcon {
 
         // Compute control command
         if (controller) {
-            // Use simple controller
-            cmd = controller->compute_control(current_state, goal, constraints_, dt);
+            // Use simple controller, pass dynamic constraints if available
+            cmd = controller->compute_control(current_state, goal, constraints_, dt, dynamic_constraints);
         }
 
         // Update goal status
@@ -420,6 +422,32 @@ namespace navcon {
             config.lookahead_distance = params.carrot_distance;
             controller = std::make_unique<tracking::point::CarrotFollower>();
             controller->set_config(config);
+            break;
+
+        case TrackerType::LQR:
+#ifdef HAS_LQR
+            config.goal_tolerance = 0.5f;
+            config.angular_tolerance = 0.1f;
+            controller = std::make_unique<tracking::path::LQRFollower>();
+            controller->set_config(config);
+#else
+            // Fallback to Pure Pursuit if LQR not available
+            controller = std::make_unique<tracking::path::PurePursuitFollower>();
+            controller->set_config(config);
+#endif
+            break;
+
+        case TrackerType::MPC:
+#ifdef HAS_MPC
+            config.goal_tolerance = 0.5f;
+            config.angular_tolerance = 0.1f;
+            controller = std::make_unique<tracking::path::MPCFollower>();
+            controller->set_config(config);
+#else
+            // Fallback to Pure Pursuit if MPC not available
+            controller = std::make_unique<tracking::path::PurePursuitFollower>();
+            controller->set_config(config);
+#endif
             break;
         }
     }

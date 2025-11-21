@@ -1,10 +1,12 @@
-THis package is based on the work of repositories:
+This package is based on the work of repositories:
 
 * [https://github.com/armando-genis/hybrid_path_planning](https://github.com/armando-genis/hybrid_path_planning)
 * [https://github.com/Raiden49/reeds-shepp_curve](https://github.com/Raiden49/reeds-shepp_curve)
 * [https://github.com/hzj-learn/Reeds-Shepp-and-Dubin-curves-for-path-generation](https://github.com/hzj-learn/Reeds-Shepp-and-Dubin-curves-for-path-generation)
 * [https://github.com/AndrewWalker/Dubins-Curves](https://github.com/AndrewWalker/Dubins-Curves)
 * [https://github.com/ghliu/pyReedsShepp](https://github.com/ghliu/pyReedsShepp)
+* [https://github.com/AtsushiSakai/PythonRobotics](https://github.com/AtsushiSakai/PythonRobotics) - Python sample codes and textbook for robotics algorithms (LQR, MPC path tracking examples)
+* [https://github.com/JunshengFu/Model-Predictive-Control](https://github.com/JunshengFu/Model-Predictive-Control) - Model Predictive Control implementation using IPOPT and CppAD
 
 
 Papers:
