@@ -66,12 +66,12 @@ namespace navcon {
                 double steering_angle = feedforward_steering + feedback_steering;
 
                 // Debug output
-                static int lqr_debug = 0;
-                if (lqr_debug++ % 100 == 0) {
-                    std::cout << "LQR DEBUG: lat_err=" << error.lateral_error << ", head_err=" << error.heading_error
-                              << ", ff_steer=" << feedforward_steering << ", fb_steer=" << feedback_steering
-                              << ", total_steer=" << steering_angle << std::endl;
-                }
+                // static int lqr_debug = 0;
+                // if (lqr_debug++ % 100 == 0) {
+                //     std::cout << "LQR DEBUG: lat_err=" << error.lateral_error << ", head_err=" << error.heading_error
+                //               << ", ff_steer=" << feedforward_steering << ", fb_steer=" << feedback_steering
+                //               << ", total_steer=" << steering_angle << std::endl;
+                // }
 
                 // Clamp steering to limits
                 steering_angle =
@@ -110,11 +110,11 @@ namespace navcon {
                 cmd.status_message = "LQR tracking";
 
                 // Final debug
-                static int return_debug = 0;
-                if (return_debug++ % 100 == 0) {
-                    std::cout << "LQR RETURN: valid=" << cmd.valid << ", linear=" << cmd.linear_velocity
-                              << ", angular=" << cmd.angular_velocity << std::endl;
-                }
+                // static int return_debug = 0;
+                // if (return_debug++ % 100 == 0) {
+                //     std::cout << "LQR RETURN: valid=" << cmd.valid << ", linear=" << cmd.linear_velocity
+                //               << ", angular=" << cmd.angular_velocity << std::endl;
+                // }
 
                 return cmd;
             }
