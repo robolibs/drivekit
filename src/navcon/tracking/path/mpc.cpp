@@ -81,9 +81,9 @@ namespace navcon {
 
                 // Convert steering and acceleration to velocities
                 // For differential drive robots
-                double target_velocity = current_state.velocity.linear + solution.acceleration * mpc_config_.dt;
-                target_velocity =
-                    std::clamp(target_velocity, -constraints.max_linear_velocity, constraints.max_linear_velocity);
+                // Use reference velocity as target, modified by acceleration from MPC
+                double target_velocity = mpc_config_.ref_velocity + solution.acceleration * mpc_config_.dt;
+                target_velocity = std::clamp(target_velocity, 0.0, constraints.max_linear_velocity);
 
                 // Convert steering angle to angular velocity
                 // Using proportional control on steering angle
@@ -157,6 +157,9 @@ namespace navcon {
 
                 // Calculate heading error (epsi)
                 result.epsi = normalize_angle(current_state.pose.angle.yaw - result.path_heading);
+
+                // Update path index to advance along the path
+                path_index_ = nearest_idx;
 
                 return result;
             }

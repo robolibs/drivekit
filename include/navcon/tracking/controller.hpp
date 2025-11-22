@@ -42,6 +42,9 @@ namespace navcon {
             // Get controller type name
             virtual std::string get_type() const = 0;
 
+            // Get current path index (for visualization/debugging)
+            virtual size_t get_path_index() const { return path_index_; }
+
           protected:
             ControllerConfig config_;
             ControllerStatus status_;
