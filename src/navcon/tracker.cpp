@@ -102,8 +102,8 @@ namespace navcon {
         if (controller_type == TrackerType::PID || controller_type == TrackerType::CARROT) {
             goal = get_current_tracking_goal(); // Point-based controllers need specific targets
         } else if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
-                   controller_type == TrackerType::LQR) {
-            // Pure Pursuit, Stanley, and LQR use the path, but need goal set to END of path for goal-reached check
+                   controller_type == TrackerType::LQR || controller_type == TrackerType::MPC) {
+            // Pure Pursuit, Stanley, LQR, and MPC use the path, but need goal set to END of path for goal-reached check
             if (current_path.has_value() && !current_path->waypoints.empty()) {
                 goal.target_pose = concord::Pose{current_path->waypoints.back(), concord::Euler{0.0f, 0.0f, 0.0f}};
                 goal.tolerance_position = current_path->tolerance;
@@ -114,6 +114,25 @@ namespace navcon {
         if (controller) {
             // Use simple controller, pass dynamic constraints if available
             cmd = controller->compute_control(current_state, goal, constraints_, dt, dynamic_constraints);
+
+            // For Ackermann steering, enforce minimum velocity when angular velocity is non-zero
+            // Ackermann vehicles cannot turn in place - they need forward/backward motion
+            if (cmd.valid && constraints_.steering_type == SteeringType::ACKERMANN) {
+                const double min_velocity = 0.3;             // Minimum 30% throttle when turning
+                if (std::abs(cmd.angular_velocity) > 0.01) { // Only enforce if we're trying to turn
+                    if (std::abs(cmd.linear_velocity) < min_velocity) {
+                        // Preserve sign (forward/backward) but enforce minimum magnitude
+                        cmd.linear_velocity = (cmd.linear_velocity >= 0) ? min_velocity : -min_velocity;
+                    }
+                }
+            }
+
+            // Sync path index from controller for visualization
+            // Path-based controllers (Pure Pursuit, Stanley, LQR, MPC) manage their own path index
+            if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
+                controller_type == TrackerType::LQR || controller_type == TrackerType::MPC) {
+                current_waypoint_index = controller->get_path_index();
+            }
         }
 
         // Update goal status

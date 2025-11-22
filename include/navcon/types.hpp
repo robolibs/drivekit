@@ -13,6 +13,14 @@ namespace navcon {
     using Size = concord::Size;
     using Euler = concord::Euler;
 
+    // Steering type
+    enum class SteeringType {
+        DIFFERENTIAL, // Differential drive (can turn in place)
+        ACKERMANN,    // Ackermann steering (needs forward motion to turn)
+        HOLONOMIC,    // Omnidirectional (can move in any direction)
+        SKID_STEER    // Skid steering (like differential but with lateral motion)
+    };
+
     // Velocity state
     struct Velocity {
         double linear = 0.0;  // Forward velocity (m/s)
@@ -38,9 +46,10 @@ namespace navcon {
     // Robot physical parameters (static, set at initialization)
     struct RobotConstraints {
         // Kinematic parameters
-        double wheelbase = 1.0;    // Distance between axles (m)
-        double track_width = 0.5;  // Distance between wheels (m)
-        double wheel_radius = 0.1; // Wheel radius (m)
+        SteeringType steering_type = SteeringType::DIFFERENTIAL; // Default to differential drive
+        double wheelbase = 1.0;                                  // Distance between axles (m)
+        double track_width = 0.5;                                // Distance between wheels (m)
+        double wheel_radius = 0.1;                               // Wheel radius (m)
 
         // Dynamic limits
         double max_linear_velocity = 1.0;      // m/s

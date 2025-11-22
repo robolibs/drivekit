@@ -64,8 +64,16 @@ if(${project_name_upper}_ENABLE_LQR OR ${project_name_upper}_ENABLE_MPC)
             message(STATUS "  Include dirs: ${${pkg_upper}_INCLUDE_DIRS}")
             message(STATUS "  Library dirs: ${${pkg_upper}_LIBRARY_DIRS}")
             include_directories(${${pkg_upper}_INCLUDE_DIRS})
+            # Also add parent directory for CppAD which expects coin-or/IpIpoptApplication.hpp
+            if(pkg STREQUAL "ipopt")
+                foreach(incdir IN LISTS ${pkg_upper}_INCLUDE_DIRS)
+                    get_filename_component(parent_dir "${incdir}" DIRECTORY)
+                    include_directories("${parent_dir}")
+                endforeach()
+            endif()
             link_directories(${${pkg_upper}_LIBRARY_DIRS})
-            list(APPEND ext_deps ${${pkg_upper}_LIBRARIES})
+            # Use LINK_LIBRARIES for proper library path resolution
+            list(APPEND ext_deps ${${pkg_upper}_LINK_LIBRARIES})
         else()
             message(WARNING "${pkg} not found - MPC cannot be enabled")
         endif()
@@ -73,7 +81,7 @@ if(${project_name_upper}_ENABLE_LQR OR ${project_name_upper}_ENABLE_MPC)
 
     # Enable LQR if Eigen3 is found
     if(${project_name_upper}_ENABLE_LQR AND Eigen3_FOUND)
-        add_definitions(-DHAS_LQR)
+        set(HAS_LQR ON)
         message(STATUS "✓ LQR controller enabled (Eigen3)")
     elseif(${project_name_upper}_ENABLE_LQR)
         message(WARNING "✗ LQR controller disabled - missing Eigen3")
@@ -81,7 +89,7 @@ if(${project_name_upper}_ENABLE_LQR OR ${project_name_upper}_ENABLE_MPC)
 
     # Enable MPC if all dependencies found
     if(${project_name_upper}_ENABLE_MPC AND Eigen3_FOUND AND IPOPT_FOUND AND CPPAD_FOUND)
-        add_definitions(-DHAS_MPC)
+        set(HAS_MPC ON)
         message(STATUS "✓ MPC controller enabled (Eigen3 + ipopt + cppad)")
     elseif(${project_name_upper}_ENABLE_MPC)
         message(WARNING "✗ MPC controller disabled - missing dependencies")
@@ -115,6 +123,15 @@ target_include_directories(${project_name}
 target_link_libraries(${project_name} PRIVATE ${ext_deps})
 target_link_libraries(${project_name} PUBLIC ${ext_deps})
 target_compile_options(${project_name} PRIVATE ${params})
+
+# Set compile definitions for optional features
+if(HAS_LQR)
+    target_compile_definitions(${project_name} PUBLIC HAS_LQR)
+endif()
+if(HAS_MPC)
+    target_compile_definitions(${project_name} PUBLIC HAS_MPC)
+endif()
+
 if(HAS_RERUN OR ${project_name_upper}_BUILD_EXAMPLES)
     find_package(rerun_sdk REQUIRED)
     list(APPEND ext_deps rerun_sdk)
