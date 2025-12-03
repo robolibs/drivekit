@@ -57,6 +57,7 @@ namespace navcon {
             // Configuration
             void set_mpc_config(const MPCConfig &config);
             MPCConfig get_mpc_config() const;
+            const std::vector<Point> &get_predicted_trajectory() const { return predicted_trajectory_; }
 
             // Make these public so FG_eval can access them
             struct PathError {
@@ -127,6 +128,8 @@ namespace navcon {
             size_t epsi_start_;
             size_t steering_start_;
             size_t acceleration_start_;
+            size_t steering_rate_start_;
+            double steering_rate_limit_;
         };
 
     } // namespace pred
