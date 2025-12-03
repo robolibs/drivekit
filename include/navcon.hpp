@@ -1,11 +1,8 @@
 #pragma once
 
-// Main navcon header - includes both planner and tracker
-// You can also include them individually:
-//   #include "navcon/tracker.hpp"
-//   #include "navcon/planner.hpp"
+// Main navcon header - includes tracker functionality
+// The planner is now a separate package
 
-#include "navcon/planner.hpp"
 #include "navcon/tracker.hpp"
-#include "navcon/tracking/utils/visualize.hpp"
 #include "navcon/types.hpp"
+#include "navcon/utils/visualize.hpp"

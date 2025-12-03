@@ -93,7 +93,9 @@ namespace navcon {
         }
 
         // Update waypoint progress for path following
-        if (current_path.has_value()) {
+        // Only for point-based controllers (PID, CARROT) that don't manage their own path index
+        if (current_path.has_value() &&
+            (controller_type == TrackerType::PID || controller_type == TrackerType::CARROT)) {
             update_waypoint_progress(current_state);
         }
 
@@ -132,6 +134,11 @@ namespace navcon {
             if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
                 controller_type == TrackerType::LQR || controller_type == TrackerType::MPC) {
                 current_waypoint_index = controller->get_path_index();
+
+                // Check if controller reports goal reached (for path completion)
+                if (controller->get_status().goal_reached) {
+                    path_completed = true;
+                }
             }
         }
 
@@ -244,9 +251,9 @@ namespace navcon {
     }
 
     // Direct access to controller
-    tracking::Controller *Tracker::get_controller() { return controller.get(); }
+    Controller *Tracker::get_controller() { return controller.get(); }
 
-    const tracking::Controller *Tracker::get_controller() const { return controller.get(); }
+    const Controller *Tracker::get_controller() const { return controller.get(); }
 
     // Visualization
     void Tracker::tock() const {
@@ -407,7 +414,7 @@ namespace navcon {
             config.kp_angular = params.angular_kp;
             config.ki_angular = params.angular_ki;
             config.kd_angular = params.angular_kd;
-            controller = std::make_unique<tracking::point::PIDFollower>();
+            controller = std::make_unique<point::PIDFollower>();
             controller->set_config(config);
             // DEBUG:             std::cout << "PID controller created: " << (controller ? "success" : "failed") <<
             // std::endl;
@@ -418,7 +425,7 @@ namespace navcon {
             config.lookahead_distance = params.lookahead_distance;
             config.goal_tolerance = 0.5f;
             config.angular_tolerance = 0.1f;
-            controller = std::make_unique<tracking::path::PurePursuitFollower>();
+            controller = std::make_unique<path::PurePursuitFollower>();
             controller->set_config(config);
             // DEBUG:             std::cout << "Pure Pursuit controller created: " << (controller ? "success" :
             // "failed") << std::endl;
@@ -431,7 +438,7 @@ namespace navcon {
             config.goal_tolerance = 0.5f;
             config.angular_tolerance = 0.1f;
             config.allow_reverse = false; // Can be enabled if needed
-            controller = std::make_unique<tracking::path::StanleyFollower>();
+            controller = std::make_unique<path::StanleyFollower>();
             controller->set_config(config);
             // DEBUG:             std::cout << "Stanley controller created: " << (controller ? "success" : "failed") <<
             // std::endl;
@@ -439,7 +446,7 @@ namespace navcon {
 
         case TrackerType::CARROT:
             config.lookahead_distance = params.carrot_distance;
-            controller = std::make_unique<tracking::point::CarrotFollower>();
+            controller = std::make_unique<point::CarrotFollower>();
             controller->set_config(config);
             break;
 
@@ -447,11 +454,11 @@ namespace navcon {
 #ifdef HAS_LQR
             config.goal_tolerance = 0.5f;
             config.angular_tolerance = 0.1f;
-            controller = std::make_unique<tracking::path::LQRFollower>();
+            controller = std::make_unique<path::LQRFollower>();
             controller->set_config(config);
 #else
             // Fallback to Pure Pursuit if LQR not available
-            controller = std::make_unique<tracking::path::PurePursuitFollower>();
+            controller = std::make_unique<path::PurePursuitFollower>();
             controller->set_config(config);
 #endif
             break;
@@ -460,11 +467,11 @@ namespace navcon {
 #ifdef HAS_MPC
             config.goal_tolerance = 0.5f;
             config.angular_tolerance = 0.1f;
-            controller = std::make_unique<tracking::path::MPCFollower>();
+            controller = std::make_unique<pred::MPCFollower>();
             controller->set_config(config);
 #else
             // Fallback to Pure Pursuit if MPC not available
-            controller = std::make_unique<tracking::path::PurePursuitFollower>();
+            controller = std::make_unique<path::PurePursuitFollower>();
             controller->set_config(config);
 #endif
             break;
