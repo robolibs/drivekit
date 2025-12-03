@@ -84,20 +84,19 @@ namespace navcon {
             double target_velocity = mpc_config_.ref_velocity + solution.acceleration * mpc_config_.dt;
             target_velocity = std::clamp(target_velocity, 0.0, constraints.max_linear_velocity);
 
-            // Convert steering angle to angular velocity
-            // Using proportional control on steering angle
-            double kp_steer = 3.0;
-            double angular_velocity = kp_steer * solution.steering;
-            angular_velocity =
-                std::clamp(angular_velocity, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+            // For Ackermann steering, angular_velocity field is actually the steering angle
+            // Just clamp to max steering angle
+            double steering_angle = solution.steering;
+            steering_angle =
+                std::clamp(steering_angle, -constraints.max_steering_angle, constraints.max_steering_angle);
 
             // Convert to output units based on configuration
             if (config_.output_units == OutputUnits::NORMALIZED) {
                 cmd.linear_velocity = target_velocity / constraints.max_linear_velocity;
-                cmd.angular_velocity = angular_velocity / constraints.max_angular_velocity;
+                cmd.angular_velocity = steering_angle / constraints.max_steering_angle;
             } else {
                 cmd.linear_velocity = target_velocity;
-                cmd.angular_velocity = angular_velocity;
+                cmd.angular_velocity = steering_angle;
             }
 
             cmd.valid = true;
@@ -174,7 +173,8 @@ namespace navcon {
             // Generate reference points along the path for the prediction horizon
             for (size_t i = 0; i < mpc_config_.horizon_steps + 1; ++i) {
                 // Estimate how far along the path we should be at this timestep
-                double distance_ahead = current_state.velocity.linear * mpc_config_.dt * i;
+                // Use reference velocity for prediction, not current velocity
+                double distance_ahead = mpc_config_.ref_velocity * mpc_config_.dt * i;
 
                 // Find corresponding waypoint
                 size_t target_idx = start_idx;
@@ -230,8 +230,8 @@ namespace navcon {
 
             // Total number of variables
             size_t n_vars = n_states * (N + 1) + n_actuators * N;
-            // Total number of constraints
-            size_t n_constraints = n_states * (N + 1);
+            // Total number of constraints (state constraints + steering-rate constraints)
+            size_t n_constraints = n_states * (N + 1) + (N - 1);
 
             // Initial values of all variables (should be 0 except initial state)
             Dvector vars(n_vars);
@@ -248,6 +248,7 @@ namespace navcon {
             size_t epsi_start = cte_start + N + 1;
             size_t steering_start = epsi_start + N + 1;
             size_t acceleration_start = steering_start + N;
+            size_t steering_rate_start = n_states * (N + 1); // appended after state constraints
 
             vars[x_start] = current_state.pose.point.x;
             vars[y_start] = current_state.pose.point.y;
@@ -317,6 +318,13 @@ namespace navcon {
             constraints_lowerbound[epsi_start] = epsi;
             constraints_upperbound[epsi_start] = epsi;
 
+            // Steering rate constraints: steering[k+1] - steering[k] within +/- max_rate*dt
+            double steer_rate_bound = constraints.max_steering_rate * mpc_config_.dt;
+            for (size_t i = 0; i < N - 1; ++i) {
+                constraints_lowerbound[steering_rate_start + i] = -steer_rate_bound;
+                constraints_upperbound[steering_rate_start + i] = steer_rate_bound;
+            }
+
             // Create FG_eval object
             FG_eval fg_eval(ref_trajectory, mpc_config_, constraints);
 
@@ -372,6 +380,8 @@ namespace navcon {
             epsi_start_ = cte_start_ + N + 1;
             steering_start_ = epsi_start_ + N + 1;
             acceleration_start_ = steering_start_ + N;
+            steering_rate_limit_ = constraints.max_steering_rate;
+            steering_rate_start_ = 6 * (N + 1); // after state constraints
         }
 
         void FG_eval::operator()(ADvector &fg, const ADvector &vars) {
@@ -472,6 +482,12 @@ namespace navcon {
 
                 // epsi(t+1) = (yaw(t) - ref_yaw) + v(t) / Lf * steering(t) * dt
                 fg[2 + epsi_start_ + i] = epsi1 - (epsi0 + v0 * steering / Lf * dt);
+            }
+
+            // Steering rate constraints: steering[k+1] - steering[k] within bounds
+            for (size_t i = 0; i < N - 1; ++i) {
+                fg[1 + steering_rate_start_ + i] =
+                    vars[steering_start_ + i + 1] - vars[steering_start_ + i];
             }
         }
 
