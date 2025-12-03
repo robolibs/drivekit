@@ -1,5 +1,5 @@
 #include "navcon.hpp"
-#include "navcon/tracking/utils/visualize.hpp"
+#include "navcon/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -34,7 +34,7 @@ int main() {
     navcon::Tracker navigator(navcon::TrackerType::MPC);
 
     // Get and configure MPC parameters
-    auto mpc_controller = dynamic_cast<navcon::tracking::path::MPCFollower *>(navigator.get_controller());
+    auto mpc_controller = dynamic_cast<navcon::pred::MPCFollower *>(navigator.get_controller());
     if (mpc_controller) {
         auto mpc_config = mpc_controller->get_mpc_config();
         mpc_config.horizon_steps = 10;              // Prediction horizon
@@ -123,7 +123,7 @@ int main() {
             current_time += dt;
 
             // Visualize
-            navcon::tracking::visualize::show_robot_state(rec, robot_state, "robot_mpc",
+            navcon::visualize::show_robot_state(rec, robot_state, "robot_mpc",
                                                           rerun::Color(0, 191, 255)); // Deep sky blue color
             navigator.tock();
 

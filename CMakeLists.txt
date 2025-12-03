@@ -104,11 +104,11 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 # Remove optional controller sources if their features are disabled
 if(NOT ${project_name_upper}_ENABLE_LQR)
-    list(FILTER SOURCES EXCLUDE REGEX ".*/tracking/path/lqr\\.cpp$")
+    list(FILTER SOURCES EXCLUDE REGEX ".*/path/lqr\\.cpp$")
 endif()
 
 if(NOT ${project_name_upper}_ENABLE_MPC)
-    list(FILTER SOURCES EXCLUDE REGEX ".*/tracking/path/mpc\\.cpp$")
+    list(FILTER SOURCES EXCLUDE REGEX ".*/(path|pred)/mpc\\.cpp$")
 endif()
 
 add_library(${project_name} ${SOURCES})
@@ -152,13 +152,13 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 
 # Install optional headers only if enabled
 if(${project_name_upper}_ENABLE_LQR AND Eigen3_FOUND)
-    install(FILES include/navcon/tracking/path/lqr.hpp 
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/navcon/tracking/path)
+    install(FILES include/navcon/path/lqr.hpp 
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/navcon/path)
 endif()
 
 if(${project_name_upper}_ENABLE_MPC AND Eigen3_FOUND AND IPOPT_FOUND AND CPPAD_FOUND)
-    install(FILES include/navcon/tracking/path/mpc.hpp 
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/navcon/tracking/path)
+    install(FILES include/navcon/pred/mpc.hpp 
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/navcon/pred)
 endif()
 
 # Install library and export targets

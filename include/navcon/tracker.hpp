@@ -1,18 +1,17 @@
 #pragma once
 
 #include "concord/concord.hpp"
-#include "navcon/tracking/controller.hpp"
-#include "navcon/tracking/path/pure_pursuit.hpp"
-#include "navcon/tracking/path/stanley.hpp"
-#include "navcon/tracking/point/carrot.hpp"
-#include "navcon/tracking/point/pid.hpp"
+#include "navcon/controller.hpp"
+#include "navcon/path/pure_pursuit.hpp"
+#include "navcon/path/stanley.hpp"
+#include "navcon/point/carrot.hpp"
+#include "navcon/point/pid.hpp"
 #ifdef HAS_LQR
-#include "navcon/tracking/path/lqr.hpp"
+#include "navcon/path/lqr.hpp"
 #endif
 #ifdef HAS_MPC
-#include "navcon/tracking/path/mpc.hpp"
+#include "navcon/pred/mpc.hpp"
 #endif
-#include "navcon/tracking/types.hpp"
 #include "navcon/types.hpp"
 #include <cmath>
 #include <iostream>
@@ -59,7 +58,7 @@ namespace navcon {
     class Tracker {
       private:
         TrackerType controller_type;
-        std::unique_ptr<tracking::Controller> controller;
+        std::unique_ptr<Controller> controller;
 
         // Current navigation state
         std::optional<NavigationGoal> current_goal;
@@ -146,8 +145,8 @@ namespace navcon {
         void smoothen(float interval_cm = 100.0f);
 
         // Direct access to controller
-        tracking::Controller *get_controller();
-        const tracking::Controller *get_controller() const;
+        Controller *get_controller();
+        const Controller *get_controller() const;
 
         // Visualization
         void tock() const;

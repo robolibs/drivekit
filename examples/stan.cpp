@@ -1,5 +1,5 @@
 #include "navcon.hpp"
-#include "navcon/tracking/utils/visualize.hpp"
+#include "navcon/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -71,7 +71,7 @@ int main() {
 
             current_time += dt;
 
-            navcon::tracking::visualize::show_robot_state(rec, robot_state, "robot_stanley", rerun::Color(255, 165, 0));
+            navcon::visualize::show_robot_state(rec, robot_state, "robot_stanley", rerun::Color(255, 165, 0));
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
