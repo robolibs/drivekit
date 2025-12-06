@@ -30,17 +30,18 @@ namespace navcon {
                 return cmd;
             }
 
-            // Check if goal is reached
-            // NOTE: Disabled for path tracking - let the tracker handle goal reaching
-            // if (is_goal_reached(current_state.pose, goal.target_pose)) {
-            //     cmd.valid = true;
-            //     cmd.status_message = "Goal reached";
-            //     status_.goal_reached = true;
-            //     status_.mode = "stopped";
-            //     cmd.linear_velocity = 0.0;
-            //     cmd.angular_velocity = 0.0;
-            //     return cmd;
-            // }
+            // Check if goal is reached (end of path)
+            // When we are within the configured goal/angle tolerances, report success
+            // and output a zero command so the higher-level tracker and robot stop.
+            if (is_goal_reached(current_state.pose, goal.target_pose)) {
+                cmd.valid = true;
+                cmd.status_message = "Goal reached";
+                status_.goal_reached = true;
+                status_.mode = "stopped";
+                cmd.linear_velocity = 0.0;
+                cmd.angular_velocity = 0.0;
+                return cmd;
+            }
 
             // Calculate path tracking errors
             PathError error = calculate_path_error(current_state);
@@ -469,25 +470,32 @@ namespace navcon {
                 // y(t+1) = y(t) + v(t) * sin(yaw(t)) * dt
                 fg[2 + y_start_ + i] = y1 - (y0 + v0 * CppAD::sin(yaw0) * dt);
 
-                // yaw(t+1) = yaw(t) + v(t) / Lf * tan(steering(t)) * dt
-                // Using small angle approximation: tan(x) ≈ x for small x
+                // yaw(t+1) = yaw(t) + v(t) / Lf * steering(t) * dt
+                // Note: Using direct steering angle (already small angle approximation)
                 fg[2 + yaw_start_ + i] = yaw1 - (yaw0 + v0 * steering / Lf * dt);
 
                 // v(t+1) = v(t) + acceleration(t) * dt
                 fg[2 + v_start_ + i] = v1 - (v0 + acceleration * dt);
 
-                // cte(t+1) = (ref_y - y(t)) + v(t) * sin(epsi(t)) * dt
-                // Simplified: cte evolves based on velocity and heading error
+                // Error dynamics - properly track reference trajectory changes
+                // Get reference heading change rate for next step
+                AD<double> ref_yaw_rate = 0.0;
+                if (i + 1 < ref_trajectory_.yaw.size()) {
+                    ref_yaw_rate = (ref_trajectory_.yaw[i + 1] - ref_trajectory_.yaw[i]) / dt;
+                }
+
+                // cte(t+1) = cte(t) + v(t) * sin(epsi(t)) * dt
+                // Cross-track error evolves based on lateral velocity component
                 fg[2 + cte_start_ + i] = cte1 - (cte0 + v0 * CppAD::sin(epsi0) * dt);
 
-                // epsi(t+1) = (yaw(t) - ref_yaw) + v(t) / Lf * steering(t) * dt
-                fg[2 + epsi_start_ + i] = epsi1 - (epsi0 + v0 * steering / Lf * dt);
+                // epsi(t+1) = epsi(t) + (v(t)/Lf * steering(t) - ref_yaw_rate) * dt
+                // Heading error evolves based on difference between actual and reference yaw rates
+                fg[2 + epsi_start_ + i] = epsi1 - (epsi0 + (v0 * steering / Lf - ref_yaw_rate) * dt);
             }
 
             // Steering rate constraints: steering[k+1] - steering[k] within bounds
             for (size_t i = 0; i < N - 1; ++i) {
-                fg[1 + steering_rate_start_ + i] =
-                    vars[steering_start_ + i + 1] - vars[steering_start_ + i];
+                fg[1 + steering_rate_start_ + i] = vars[steering_start_ + i + 1] - vars[steering_start_ + i];
             }
         }
 

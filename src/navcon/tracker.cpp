@@ -99,6 +99,15 @@ namespace navcon {
             update_waypoint_progress(current_state);
         }
 
+        // If the path has been completed, output a zero-velocity command so
+        // all controllers (PID, CARROT, Pure Pursuit, Stanley, LQR, MPC) stop
+        // once the final waypoint has been reached.
+        if (current_path.has_value() && path_completed) {
+            cmd.valid = true;
+            cmd.status_message = "Path completed";
+            return cmd;
+        }
+
         // Get current target goal
         Goal goal;
         if (controller_type == TrackerType::PID || controller_type == TrackerType::CARROT) {
