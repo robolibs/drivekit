@@ -48,9 +48,9 @@ namespace navcon {
     struct RobotConstraints {
         // Kinematic parameters
         SteeringType steering_type = SteeringType::ACKERMANN; // Default to Ackermann steering
-        double wheelbase = 1.0;                                  // Distance between axles (m)
-        double track_width = 0.5;                                // Distance between wheels (m)
-        double wheel_radius = 0.1;                               // Wheel radius (m)
+        double wheelbase = 1.0;                               // Distance between axles (m)
+        double track_width = 0.5;                             // Distance between wheels (m)
+        double wheel_radius = 0.1;                            // Wheel radius (m)
 
         // Dynamic limits
         double max_linear_velocity = 1.0;      // m/s

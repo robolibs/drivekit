@@ -29,13 +29,17 @@ namespace navcon {
                 double dt = 0.1;           // Time step (seconds)
 
                 // Cost function weights
-                double weight_cte = 2000.0;             // Cross-track error weight
-                double weight_epsi = 2000.0;            // Heading error weight
-                double weight_vel = 1.0;                // Velocity tracking weight
-                double weight_steering = 5.0;           // Steering effort weight
-                double weight_acceleration = 5.0;       // Acceleration effort weight
-                double weight_steering_rate = 200.0;    // Steering rate (smoothness)
-                double weight_acceleration_rate = 10.0; // Acceleration rate (smoothness)
+                // Balanced for smooth tracking without oscillation
+                // Key ratio: steering_rate/cte should be ~3-5 for stability
+                double weight_cte = 100.0;  // Cross-track error weight
+                double weight_epsi = 100.0; // Heading error weight
+                double weight_vel = 1.0;    // Velocity tracking weight
+                // Control effort weights provide damping
+                double weight_steering = 10.0;    // Steering effort weight
+                double weight_acceleration = 5.0; // Acceleration effort weight
+                // High smoothness weights prevent rapid control changes (key for stability)
+                double weight_steering_rate = 500.0;    // Steering rate (ratio = 5.0)
+                double weight_acceleration_rate = 50.0; // Acceleration rate
 
                 // Reference velocity
                 double ref_velocity = 1.0; // m/s
