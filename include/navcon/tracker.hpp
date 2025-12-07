@@ -11,6 +11,7 @@
 #endif
 #ifdef HAS_MPC
 #include "navcon/pred/mpc.hpp"
+#include "navcon/pred/mpc_trailer.hpp"
 #endif
 #include "navcon/types.hpp"
 #include <cmath>
@@ -50,7 +51,7 @@ namespace navcon {
     };
 
     // Controller types for tracking
-    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT, LQR, MPC };
+    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT, LQR, MPC, MPC_TRAILER };
 
     // ============================================================================
     // Tracker - High-level path/point tracking controller
