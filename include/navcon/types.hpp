@@ -31,10 +31,14 @@ namespace navcon {
 
     // Robot state
     struct RobotState {
-        Pose pose;
-        Velocity velocity;
-        double timestamp = 0.0;     // Time in seconds
-        bool allow_reverse = false; // Allow backward maneuvers for tight turns
+        Pose pose;                 // Primary robot pose (e.g. tractor)
+        Velocity velocity;         // Primary robot velocity
+        double timestamp = 0.0;    // Time in seconds
+        bool allow_reverse = false;
+
+        // Optional articulated follower (e.g. trailer)
+        bool has_trailer = false;
+        Pose trailer_pose; // Pose of first follower in chain when available
     };
 
     // Path specification

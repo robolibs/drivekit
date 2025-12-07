@@ -139,9 +139,10 @@ namespace navcon {
             }
 
             // Sync path index from controller for visualization
-            // Path-based controllers (Pure Pursuit, Stanley, LQR, MPC) manage their own path index
+            // Path-based controllers (Pure Pursuit, Stanley, LQR, MPC variants) manage their own path index
             if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
-                controller_type == TrackerType::LQR || controller_type == TrackerType::MPC) {
+                controller_type == TrackerType::LQR || controller_type == TrackerType::MPC ||
+                controller_type == TrackerType::MPC_TRAILER) {
                 current_waypoint_index = controller->get_path_index();
 
                 // Check if controller reports goal reached (for path completion)
@@ -480,6 +481,20 @@ namespace navcon {
             controller->set_config(config);
 #else
             // Fallback to Pure Pursuit if MPC not available
+            controller = std::make_unique<path::PurePursuitFollower>();
+            controller->set_config(config);
+#endif
+            break;
+
+        case TrackerType::MPC_TRAILER:
+#ifdef HAS_MPC
+            // Trailer-aware MPC variant. Currently uses the same kinematic bicycle
+            // model as MPCFollower but allows negative velocities for reverse motion.
+            config.goal_tolerance = 0.5f;
+            config.angular_tolerance = 0.1f;
+            controller = std::make_unique<pred::MPCTrailerFollower>();
+            controller->set_config(config);
+#else
             controller = std::make_unique<path::PurePursuitFollower>();
             controller->set_config(config);
 #endif
