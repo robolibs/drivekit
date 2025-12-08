@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
+#include <mutex>
 #include <optional>
 #include <vector>
 

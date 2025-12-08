@@ -31,9 +31,9 @@ namespace navcon {
 
     // Robot state
     struct RobotState {
-        Pose pose;                 // Primary robot pose (e.g. tractor)
-        Velocity velocity;         // Primary robot velocity
-        double timestamp = 0.0;    // Time in seconds
+        Pose pose;              // Primary robot pose (e.g. tractor)
+        Velocity velocity;      // Primary robot velocity
+        double timestamp = 0.0; // Time in seconds
         bool allow_reverse = false;
 
         // Optional articulated follower (e.g. trailer)
