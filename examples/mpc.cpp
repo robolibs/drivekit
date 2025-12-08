@@ -19,7 +19,6 @@ namespace {
 } // namespace
 
 int main() {
-#ifdef HAS_MPC
     auto rec = std::make_shared<rerun::RecordingStream>("navcon_mpc_demo", "mpc");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
@@ -158,9 +157,4 @@ int main() {
     }
 
     return 0;
-#else
-    spdlog::error("MPC controller not available - rebuild with -DNAVCON_ENABLE_MPC=ON");
-    spdlog::error("Make sure Eigen3, IPOPT, and CppAD are installed");
-    return 1;
-#endif
 }

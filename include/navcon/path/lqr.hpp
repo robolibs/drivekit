@@ -1,7 +1,6 @@
 #pragma once
 
 #include "navcon/controller.hpp"
-#include <Eigen/Dense>
 #include <algorithm>
 #include <optional>
 
@@ -39,14 +38,6 @@ namespace navcon {
                 double path_heading;
             };
             PathError calculate_path_error(const RobotState &current_state);
-
-            // Solve Discrete Algebraic Riccati Equation (DARE)
-            // Returns optimal LQR gain matrix K
-            Eigen::MatrixXd solve_dare(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B, const Eigen::MatrixXd &Q,
-                                       const Eigen::MatrixXd &R);
-
-            // Compute LQR gain for current state
-            Eigen::MatrixXd compute_lqr_gain(double velocity, const RobotConstraints &constraints, double dt);
         };
 
     } // namespace path

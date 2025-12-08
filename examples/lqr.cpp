@@ -19,7 +19,6 @@ namespace {
 } // namespace
 
 int main() {
-#ifdef HAS_LQR
     auto rec = std::make_shared<rerun::RecordingStream>("navcon_lqr_demo", "lqr");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
@@ -119,8 +118,4 @@ int main() {
     }
 
     return 0;
-#else
-    spdlog::error("LQR controller not available - rebuild with -DNAVCON_ENABLE_LQR=ON");
-    return 1;
-#endif
 }

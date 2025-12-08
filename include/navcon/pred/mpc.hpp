@@ -1,20 +1,17 @@
 #pragma once
 
 #include "navcon/controller.hpp"
-#include <Eigen/Dense>
 #include <algorithm>
-#include <cppad/cppad.hpp>
-#include <cppad/ipopt/solve.hpp>
-#include <mutex>
 #include <optional>
 #include <vector>
 
 namespace navcon {
     namespace pred {
 
-        // MPC (Model Predictive Control) controller for optimal path tracking
-        // Uses IPOPT solver with CppAD for automatic differentiation
-        // Based on kinematic bicycle model
+        // MPC (Model Predictive Control) controller for optimal path tracking.
+        // Original implementation used IPOPT + CppAD; this version uses a custom
+        // lightweight optimizer (MPCOptimizer) implemented in the .cpp file so
+        // that no nonlinear solver dependencies are required.
         class MPCFollower : public Controller {
           public:
             using Base = Controller;
@@ -45,8 +42,9 @@ namespace navcon {
                 // Reference velocity
                 double ref_velocity = 1.0; // m/s
 
-                // Solver settings
-                double max_solver_time = 0.5; // seconds
+                // Solver settings (kept for future advanced optimizers; unused in
+                // the current lightweight implementation)
+                double max_solver_time = 0.5; // seconds (hint for future solvers)
                 int print_level = 0;          // 0 = silent, 5 = verbose
             };
 
@@ -102,39 +100,12 @@ namespace navcon {
                 double acceleration;
                 std::vector<double> predicted_x;
                 std::vector<double> predicted_y;
+                // Full optimized control sequence (for warm starting)
+                std::vector<double> steering_sequence;
+                std::vector<double> acceleration_sequence;
             };
             MPCSolution solve_mpc(const RobotState &current_state, const ReferenceTrajectory &ref_trajectory,
-                                  const RobotConstraints &constraints, double cte, double epsi);
-        };
-
-        // FG_eval class for IPOPT cost function and constraints evaluation
-        class FG_eval {
-          public:
-            using ADvector = CPPAD_TESTVECTOR(CppAD::AD<double>);
-
-            // Constructor
-            FG_eval(const MPCFollower::ReferenceTrajectory &ref, const MPCFollower::MPCConfig &config,
-                    const RobotConstraints &constraints);
-
-            // Operator for IPOPT
-            void operator()(ADvector &fg, const ADvector &vars);
-
-          private:
-            MPCFollower::ReferenceTrajectory ref_trajectory_;
-            MPCFollower::MPCConfig mpc_config_;
-            RobotConstraints robot_constraints_;
-
-            // State and control indices in the vars vector
-            size_t x_start_;
-            size_t y_start_;
-            size_t yaw_start_;
-            size_t v_start_;
-            size_t cte_start_;
-            size_t epsi_start_;
-            size_t steering_start_;
-            size_t acceleration_start_;
-            size_t steering_rate_start_;
-            double steering_rate_limit_;
+                                  const RobotConstraints &constraints);
         };
 
     } // namespace pred

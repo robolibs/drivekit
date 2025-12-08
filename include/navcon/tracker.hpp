@@ -2,18 +2,13 @@
 
 #include "concord/concord.hpp"
 #include "navcon/controller.hpp"
+#include "navcon/path/lqr.hpp"
 #include "navcon/path/pure_pursuit.hpp"
 #include "navcon/path/stanley.hpp"
 #include "navcon/point/carrot.hpp"
 #include "navcon/point/pid.hpp"
-#include "navcon/pred/mppi.hpp"
-#ifdef HAS_LQR
-#include "navcon/path/lqr.hpp"
-#endif
-#ifdef HAS_MPC
 #include "navcon/pred/mpc.hpp"
-#include "navcon/pred/mpc_trailer.hpp"
-#endif
+#include "navcon/pred/mppi.hpp"
 #include "navcon/types.hpp"
 #include <cmath>
 #include <iostream>
