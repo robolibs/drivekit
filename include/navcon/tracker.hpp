@@ -9,6 +9,7 @@
 #include "navcon/point/pid.hpp"
 #include "navcon/pred/mpc.hpp"
 #include "navcon/pred/mppi.hpp"
+#include "navcon/pred/soc.hpp"
 #include "navcon/types.hpp"
 #include <cmath>
 #include <iostream>
@@ -47,7 +48,7 @@ namespace navcon {
     };
 
     // Controller types for tracking
-    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT, LQR, MPC, MPC_TRAILER, MPPI };
+    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT, LQR, MPC, MPC_TRAILER, MPPI, SOC };
 
     // ============================================================================
     // Tracker - High-level path/point tracking controller
