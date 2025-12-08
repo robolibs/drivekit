@@ -7,6 +7,8 @@ This package is based on the work of repositories:
 * [https://github.com/ghliu/pyReedsShepp](https://github.com/ghliu/pyReedsShepp)
 * [https://github.com/AtsushiSakai/PythonRobotics](https://github.com/AtsushiSakai/PythonRobotics) - Python sample codes and textbook for robotics algorithms (LQR, MPC path tracking examples)
 * [https://github.com/JunshengFu/Model-Predictive-Control](https://github.com/JunshengFu/Model-Predictive-Control) - Model Predictive Control implementation using IPOPT and CppAD
+* [https://github.com/artofnothingness/mppic](https://github.com/artofnothingness/mppic) - Model Predictive Path Integral
+* [https://github.com/sntubix/mppic](https://github.com/sntubix/mppic) - Model Predictive Path Integral 
 
 
 Papers:
@@ -17,3 +19,4 @@ Papers:
 .. [Shkel01] Shkel, A. M. and Lumelsky, V. (2001). "Classification of the Dubins set". Robotics and Autonomous Systems 34 (2001) 179–202
 .. [Walker11] Walker, A. (2011). "Hard Real-Time Motion Planning for Autonomous Vehicles", PhD thesis, Swinburne University.
 .. [Smart08] Royce, S. (2008). "Evolutionary Control of Autonomous Underwater Vehicles". PhD thesis, RMIT
+.. [Testouri23] Testouri, M, et al. (2023). "Towards a Safe Real-Time Motion Planning Framework for Autonomous Driving Systems: An MPPI Approach"

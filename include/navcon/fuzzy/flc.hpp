@@ -23,16 +23,16 @@ namespace navcon {
             // FLC configuration
             struct FLCConfig {
                 // Input ranges
-                double cte_range = 2.0;        // Cross-track error range (m)
-                double heading_range = 1.57;   // Heading error range (rad)
-                
+                double cte_range = 2.0;      // Cross-track error range (m)
+                double heading_range = 1.57; // Heading error range (rad)
+
                 // Output parameters
-                double max_steering = 0.7;     // Max steering output (normalized)
-                double base_velocity = 0.6;    // Base velocity when on track
-                double min_velocity = 0.2;     // Minimum velocity
-                
+                double max_steering = 0.7;  // Max steering output (normalized)
+                double base_velocity = 0.6; // Base velocity when on track
+                double min_velocity = 0.2;  // Minimum velocity
+
                 // Fuzzy system tuning
-                double rule_weight = 1.0;      // Global rule weight
+                double rule_weight = 1.0;        // Global rule weight
                 bool use_cte_derivative = false; // Use rate of CTE change
             };
 
@@ -49,7 +49,7 @@ namespace navcon {
 
           private:
             FLCConfig flc_config_;
-            
+
             // TODO: Implement fuzzy logic methods
             // - Fuzzification (crisp → fuzzy)
             // - Rule evaluation (IF-THEN)

@@ -108,8 +108,8 @@ namespace navcon {
 
             if (config_.output_units == OutputUnits::NORMALIZED) {
                 // Map symmetric velocity range to [-1,1]
-                double max_abs_vel = std::max(std::abs(constraints.max_linear_velocity),
-                                              std::abs(constraints.min_linear_velocity));
+                double max_abs_vel =
+                    std::max(std::abs(constraints.max_linear_velocity), std::abs(constraints.min_linear_velocity));
                 if (max_abs_vel <= 0.0) {
                     cmd.linear_velocity = 0.0;
                 } else {
@@ -188,8 +188,8 @@ namespace navcon {
             double dy = tracking_pose.point.y - result.nearest_point.y;
 
             result.cte = -dx * std::sin(result.path_heading) + dy * std::cos(result.path_heading);
-            const double heading = current_state.has_trailer ? current_state.trailer_pose.angle.yaw
-                                                             : current_state.pose.angle.yaw;
+            const double heading =
+                current_state.has_trailer ? current_state.trailer_pose.angle.yaw : current_state.pose.angle.yaw;
             result.epsi = normalize_angle(heading - result.path_heading);
             path_index_ = nearest_idx;
 
@@ -247,9 +247,10 @@ namespace navcon {
             return ref;
         }
 
-        MPCTrailerFollower::MPCSolution
-        MPCTrailerFollower::solve_mpc(const RobotState &current_state, const ReferenceTrajectory &ref_trajectory,
-                                      const RobotConstraints &constraints, double cte, double epsi) {
+        MPCTrailerFollower::MPCSolution MPCTrailerFollower::solve_mpc(const RobotState &current_state,
+                                                                      const ReferenceTrajectory &ref_trajectory,
+                                                                      const RobotConstraints &constraints, double cte,
+                                                                      double epsi) {
             using CppAD::AD;
             using Dvector = CPPAD_TESTVECTOR(double);
 
@@ -389,8 +390,7 @@ namespace navcon {
         }
 
         TrailerFGEval::TrailerFGEval(const MPCTrailerFollower::ReferenceTrajectory &ref,
-                                     const MPCTrailerFollower::MPCConfig &config,
-                                     const RobotConstraints &constraints)
+                                     const MPCTrailerFollower::MPCConfig &config, const RobotConstraints &constraints)
             : ref_trajectory_(ref), mpc_config_(config), robot_constraints_(constraints) {
             size_t N = mpc_config_.horizon_steps;
             size_t n_states = 7;
@@ -420,8 +420,7 @@ namespace navcon {
                 fg[0] += mpc_config_.weight_epsi * CppAD::pow(vars[epsi_start_ + i], 2);
 
                 if (i < ref_trajectory_.velocity.size()) {
-                    fg[0] +=
-                        mpc_config_.weight_vel * CppAD::pow(vars[v_start_ + i] - ref_trajectory_.velocity[i], 2);
+                    fg[0] += mpc_config_.weight_vel * CppAD::pow(vars[v_start_ + i] - ref_trajectory_.velocity[i], 2);
                 }
             }
 
@@ -475,13 +474,12 @@ namespace navcon {
 
                 const double dt = mpc_config_.dt;
 
-                const double L0 =
-                    (mpc_config_.truck_wheelbase > 1e-3) ? mpc_config_.truck_wheelbase
-                                                         : std::max(robot_constraints_.wheelbase, 1e-3);
+                const double L0 = (mpc_config_.truck_wheelbase > 1e-3) ? mpc_config_.truck_wheelbase
+                                                                       : std::max(robot_constraints_.wheelbase, 1e-3);
                 const double M0 = mpc_config_.truck_hitch_offset;
-                const double L1 =
-                    (mpc_config_.trailer_hitch_length > 1e-3) ? mpc_config_.trailer_hitch_length
-                                                              : std::max(robot_constraints_.robot_length, 1e-3);
+                const double L1 = (mpc_config_.trailer_hitch_length > 1e-3)
+                                      ? mpc_config_.trailer_hitch_length
+                                      : std::max(robot_constraints_.robot_length, 1e-3);
 
                 AD<double> ref_yaw_rate = 0.0;
                 if (i + 1 < ref_trajectory_.yaw.size()) {
@@ -513,8 +511,7 @@ namespace navcon {
 
                 // Error dynamics for trailer relative to reference path
                 fg[2 + cte_start_ + i] = cte1 - (cte0 + v_trailer * CppAD::sin(epsi0) * dt);
-                fg[2 + epsi_start_ + i] =
-                    epsi1 - (epsi0 + (dtheta_trailer - ref_yaw_rate) * dt);
+                fg[2 + epsi_start_ + i] = epsi1 - (epsi0 + (dtheta_trailer - ref_yaw_rate) * dt);
             }
 
             for (size_t i = 0; i < N - 1; ++i) {

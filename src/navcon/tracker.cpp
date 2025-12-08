@@ -113,8 +113,10 @@ namespace navcon {
         if (controller_type == TrackerType::PID || controller_type == TrackerType::CARROT) {
             goal = get_current_tracking_goal(); // Point-based controllers need specific targets
         } else if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
-                   controller_type == TrackerType::LQR || controller_type == TrackerType::MPC) {
-            // Pure Pursuit, Stanley, LQR, and MPC use the path, but need goal set to END of path for goal-reached check
+                   controller_type == TrackerType::LQR || controller_type == TrackerType::MPC ||
+                   controller_type == TrackerType::MPPI) {
+            // Pure Pursuit, Stanley, LQR, MPC, and MPPI use the path, but need goal set to END of path for
+            // goal-reached check
             if (current_path.has_value() && !current_path->waypoints.empty()) {
                 goal.target_pose = concord::Pose{current_path->waypoints.back(), concord::Euler{0.0f, 0.0f, 0.0f}};
                 goal.tolerance_position = current_path->tolerance;
@@ -139,10 +141,10 @@ namespace navcon {
             }
 
             // Sync path index from controller for visualization
-            // Path-based controllers (Pure Pursuit, Stanley, LQR, MPC variants) manage their own path index
+            // Path-based controllers (Pure Pursuit, Stanley, LQR, MPC variants, MPPI) manage their own path index
             if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
                 controller_type == TrackerType::LQR || controller_type == TrackerType::MPC ||
-                controller_type == TrackerType::MPC_TRAILER) {
+                controller_type == TrackerType::MPC_TRAILER || controller_type == TrackerType::MPPI) {
                 current_waypoint_index = controller->get_path_index();
 
                 // Check if controller reports goal reached (for path completion)
@@ -499,6 +501,15 @@ namespace navcon {
             controller->set_config(config);
 #endif
             break;
+
+        case TrackerType::MPPI: {
+            // MPPI sampling-based predictive controller
+            config.goal_tolerance = 0.5f;
+            config.angular_tolerance = 0.1f;
+            controller = std::make_unique<pred::MPPIFollower>();
+            controller->set_config(config);
+            break;
+        }
         }
     }
 

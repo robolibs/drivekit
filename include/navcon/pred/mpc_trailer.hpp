@@ -47,9 +47,9 @@ namespace navcon {
                 // L0: tractor wheelbase (rear axle to front axle)
                 // M0: distance from tractor rear axle to hitch
                 // L1: distance along trailer from axle to hitch
-                double truck_wheelbase = 1.0;       // L0
-                double truck_hitch_offset = 0.0;    // M0
-                double trailer_hitch_length = 1.0;  // L1
+                double truck_wheelbase = 1.0;      // L0
+                double truck_hitch_offset = 0.0;   // M0
+                double trailer_hitch_length = 1.0; // L1
 
                 // Solver settings
                 double max_solver_time = 0.5;

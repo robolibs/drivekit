@@ -7,6 +7,11 @@
 namespace navcon {
     namespace pred {
 
+        // Global mutex to protect CppAD tape operations
+        // CppAD uses thread-local tape storage that conflicts when multiple
+        // MPC solvers run concurrently. This mutex serializes MPC solve calls.
+        static std::mutex mpc_solver_mutex;
+
         // Constructor
         MPCFollower::MPCFollower() : MPCFollower(MPCConfig{}) {}
 
@@ -216,6 +221,10 @@ namespace navcon {
         MPCFollower::MPCSolution MPCFollower::solve_mpc(const RobotState &current_state,
                                                         const ReferenceTrajectory &ref_trajectory,
                                                         const RobotConstraints &constraints, double cte, double epsi) {
+            // Lock the mutex to protect CppAD tape operations from concurrent access
+            // CppAD is not thread-safe and will crash if multiple solvers run in parallel
+            std::lock_guard<std::mutex> lock(mpc_solver_mutex);
+
             using CppAD::AD;
             using Dvector = CPPAD_TESTVECTOR(double);
 
