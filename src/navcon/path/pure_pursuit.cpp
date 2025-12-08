@@ -155,7 +155,6 @@ namespace navcon {
 
             // Search for lookahead point along the path
             // Start from current waypoint position
-            Point search_start = rear_axle;
             double min_dist_diff = std::numeric_limits<double>::max();
             std::optional<Point> best_point;
 
