@@ -114,9 +114,9 @@ namespace navcon {
             goal = get_current_tracking_goal(); // Point-based controllers need specific targets
         } else if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
                    controller_type == TrackerType::LQR || controller_type == TrackerType::MPC ||
-                   controller_type == TrackerType::MPPI) {
-            // Pure Pursuit, Stanley, LQR, MPC, and MPPI use the path, but need goal set to END of path for
-            // goal-reached check
+                   controller_type == TrackerType::MPC_TRAILER || controller_type == TrackerType::MPPI) {
+            // Pure Pursuit, Stanley, LQR, MPC (including trailer variant), and MPPI use the path, but need goal set to
+            // END of path for goal-reached check
             if (current_path.has_value() && !current_path->waypoints.empty()) {
                 goal.target_pose = concord::Pose{current_path->waypoints.back(), concord::Euler{0.0f, 0.0f, 0.0f}};
                 goal.tolerance_position = current_path->tolerance;
@@ -463,43 +463,29 @@ namespace navcon {
             break;
 
         case TrackerType::LQR:
-#ifdef HAS_LQR
+            // LQR follower is always available (internal math implementation).
             config.goal_tolerance = 0.5f;
             config.angular_tolerance = 0.1f;
             controller = std::make_unique<path::LQRFollower>();
             controller->set_config(config);
-#else
-            // Fallback to Pure Pursuit if LQR not available
-            controller = std::make_unique<path::PurePursuitFollower>();
-            controller->set_config(config);
-#endif
             break;
 
         case TrackerType::MPC:
-#ifdef HAS_MPC
+            // MPCFollower is always available (uses internal optimizer).
             config.goal_tolerance = 0.5f;
             config.angular_tolerance = 0.1f;
             controller = std::make_unique<pred::MPCFollower>();
             controller->set_config(config);
-#else
-            // Fallback to Pure Pursuit if MPC not available
-            controller = std::make_unique<path::PurePursuitFollower>();
-            controller->set_config(config);
-#endif
             break;
 
         case TrackerType::MPC_TRAILER:
-#ifdef HAS_MPC
-            // Trailer-aware MPC variant. Currently uses the same kinematic bicycle
-            // model as MPCFollower but allows negative velocities for reverse motion.
+            // Trailer-aware mode currently reuses MPCFollower. Trailer pose
+            // is still exposed via RobotState, but the underlying controller
+            // uses the same kinematic bicycle model and optimizer as MPC.
             config.goal_tolerance = 0.5f;
             config.angular_tolerance = 0.1f;
-            controller = std::make_unique<pred::MPCTrailerFollower>();
+            controller = std::make_unique<pred::MPCFollower>();
             controller->set_config(config);
-#else
-            controller = std::make_unique<path::PurePursuitFollower>();
-            controller->set_config(config);
-#endif
             break;
 
         case TrackerType::MPPI: {

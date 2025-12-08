@@ -1,11 +1,220 @@
-#include "navcon/path/lqr.hpp"
+﻿#include "navcon/path/lqr.hpp"
 #include "navcon/types.hpp"
+#include <array>
 #include <cmath>
 #include <iostream>
 #include <limits>
 
 namespace navcon {
     namespace path {
+
+        namespace {
+
+            constexpr int LQR_N = 4;
+
+            using Mat4 = std::array<double, LQR_N * LQR_N>;
+            using Vec4 = std::array<double, LQR_N>;
+
+            inline Mat4 mat4_zero() {
+                Mat4 M{};
+                M.fill(0.0);
+                return M;
+            }
+
+            inline Mat4 mat4_identity() {
+                Mat4 M = mat4_zero();
+                for (int i = 0; i < LQR_N; ++i) {
+                    M[i * LQR_N + i] = 1.0;
+                }
+                return M;
+            }
+
+            inline Mat4 mat4_add(const Mat4 &A, const Mat4 &B) {
+                Mat4 C;
+                for (int i = 0; i < LQR_N * LQR_N; ++i) {
+                    C[i] = A[i] + B[i];
+                }
+                return C;
+            }
+
+            inline Mat4 mat4_sub(const Mat4 &A, const Mat4 &B) {
+                Mat4 C;
+                for (int i = 0; i < LQR_N * LQR_N; ++i) {
+                    C[i] = A[i] - B[i];
+                }
+                return C;
+            }
+
+            inline Mat4 mat4_mul(const Mat4 &A, const Mat4 &B) {
+                Mat4 C = mat4_zero();
+                for (int i = 0; i < LQR_N; ++i) {
+                    for (int j = 0; j < LQR_N; ++j) {
+                        double sum = 0.0;
+                        for (int k = 0; k < LQR_N; ++k) {
+                            sum += A[i * LQR_N + k] * B[k * LQR_N + j];
+                        }
+                        C[i * LQR_N + j] = sum;
+                    }
+                }
+                return C;
+            }
+
+            inline Mat4 mat4_transpose(const Mat4 &A) {
+                Mat4 At;
+                for (int i = 0; i < LQR_N; ++i) {
+                    for (int j = 0; j < LQR_N; ++j) {
+                        At[j * LQR_N + i] = A[i * LQR_N + j];
+                    }
+                }
+                return At;
+            }
+
+            inline Vec4 mat4_vec_mul(const Mat4 &A, const Vec4 &x) {
+                Vec4 y{};
+                for (int i = 0; i < LQR_N; ++i) {
+                    double sum = 0.0;
+                    for (int j = 0; j < LQR_N; ++j) {
+                        sum += A[i * LQR_N + j] * x[j];
+                    }
+                    y[i] = sum;
+                }
+                return y;
+            }
+
+            inline double vec4_dot(const Vec4 &a, const Vec4 &b) {
+                double s = 0.0;
+                for (int i = 0; i < LQR_N; ++i) {
+                    s += a[i] * b[i];
+                }
+                return s;
+            }
+
+            // Solve Discrete Algebraic Riccati Equation using iterative method
+            Mat4 solve_dare(const Mat4 &A, const Vec4 &B, const Mat4 &Q, double R) {
+                const int max_iterations = 150;
+                const double tolerance = 1e-5;
+
+                Mat4 P = Q; // Initial guess
+
+                for (int it = 0; it < max_iterations; ++it) {
+                    Mat4 AT = mat4_transpose(A);
+
+                    // A^T P A
+                    Mat4 AT_P = mat4_mul(AT, P);
+                    Mat4 AT_P_A = mat4_mul(AT_P, A);
+
+                    // B^T P B (scalar)
+                    Vec4 PB = mat4_vec_mul(P, B);
+                    double BT_P_B = vec4_dot(B, PB);
+                    double denom = R + BT_P_B;
+                    if (std::fabs(denom) < 1e-9) {
+                        denom = (denom >= 0.0 ? 1e-9 : -1e-9);
+                    }
+                    double inv_denom = 1.0 / denom;
+
+                    // A^T P B (4x1)
+                    Vec4 AT_P_B = mat4_vec_mul(AT_P, B);
+
+                    // B^T P A (1x4)
+                    Mat4 P_A = mat4_mul(P, A);
+                    Vec4 BT_P_A{};
+                    for (int j = 0; j < LQR_N; ++j) {
+                        double sum = 0.0;
+                        for (int i = 0; i < LQR_N; ++i) {
+                            sum += B[i] * P_A[i * LQR_N + j];
+                        }
+                        BT_P_A[j] = sum;
+                    }
+
+                    // A^T P B (R + B^T P B)^-1 B^T P A
+                    Mat4 term = mat4_zero();
+                    for (int i = 0; i < LQR_N; ++i) {
+                        for (int j = 0; j < LQR_N; ++j) {
+                            term[i * LQR_N + j] = AT_P_B[i] * BT_P_A[j] * inv_denom;
+                        }
+                    }
+
+                    Mat4 P_next = mat4_add(mat4_sub(AT_P_A, term), Q);
+
+                    // Check convergence (Frobenius norm)
+                    double diff_norm = 0.0;
+                    for (int i = 0; i < LQR_N * LQR_N; ++i) {
+                        double d = P_next[i] - P[i];
+                        diff_norm += d * d;
+                    }
+                    diff_norm = std::sqrt(diff_norm);
+                    P = P_next;
+
+                    if (diff_norm < tolerance) {
+                        break;
+                    }
+                }
+
+                return P;
+            }
+
+            // Compute LQR gain: K (1x4 row) given velocity and constraints
+            std::array<double, 4> compute_lqr_gain(double velocity, const RobotConstraints &constraints, double dt) {
+                // Linearized bicycle model matrices
+                Mat4 A{};
+                A[0 * 4 + 0] = 1.0;
+                A[0 * 4 + 1] = dt;
+                A[0 * 4 + 2] = 0.0;
+                A[0 * 4 + 3] = 0.0;
+
+                A[1 * 4 + 0] = 0.0;
+                A[1 * 4 + 1] = 1.0;
+                A[1 * 4 + 2] = velocity;
+                A[1 * 4 + 3] = 0.0;
+
+                A[2 * 4 + 0] = 0.0;
+                A[2 * 4 + 1] = 0.0;
+                A[2 * 4 + 2] = 1.0;
+                A[2 * 4 + 3] = dt;
+
+                A[3 * 4 + 0] = 0.0;
+                A[3 * 4 + 1] = 0.0;
+                A[3 * 4 + 2] = 0.0;
+                A[3 * 4 + 3] = 1.0;
+
+                Vec4 B{};
+                B[0] = 0.0;
+                B[1] = 0.0;
+                B[2] = 0.0;
+                B[3] = velocity / constraints.wheelbase;
+
+                // Cost matrices (tunable parameters)
+                Mat4 Q = mat4_zero();
+                Q[0 * 4 + 0] = 1.0; // Lateral error cost
+                Q[2 * 4 + 2] = 0.5; // Heading error cost
+
+                double R = 0.5; // Control effort cost (scalar)
+
+                Mat4 P = solve_dare(A, B, Q, R);
+
+                // Compute K = (R + B^T P B)^-1 B^T P A (1x4 row)
+                Vec4 PB = mat4_vec_mul(P, B);
+                double BT_P_B = vec4_dot(B, PB);
+                double denom = R + BT_P_B;
+                if (std::fabs(denom) < 1e-9) {
+                    denom = (denom >= 0.0 ? 1e-9 : -1e-9);
+                }
+                double inv_denom = 1.0 / denom;
+
+                Mat4 P_A = mat4_mul(P, A);
+                std::array<double, 4> K{};
+                for (int j = 0; j < LQR_N; ++j) {
+                    double sum = 0.0;
+                    for (int i = 0; i < LQR_N; ++i) {
+                        sum += B[i] * P_A[i * LQR_N + j];
+                    }
+                    K[j] = inv_denom * sum;
+                }
+
+                return K;
+            }
+
+        } // namespace
 
         VelocityCommand LQRFollower::compute_control(const RobotState &current_state, const Goal &goal,
                                                      const RobotConstraints &constraints, double dt,
@@ -48,15 +257,18 @@ namespace navcon {
                 velocity = 0.1; // Minimum velocity to avoid division by zero
             }
 
-            // Compute LQR gain matrix
-            Eigen::MatrixXd K = compute_lqr_gain(velocity, constraints, dt);
+            // Compute LQR gain vector (1x4 row)
+            std::array<double, 4> K = compute_lqr_gain(velocity, constraints, dt);
 
             // State vector: [lateral_error, lateral_error_rate, heading_error, heading_error_rate]
-            Eigen::Vector4d state_error;
-            state_error << error.lateral_error, lateral_error_rate, error.heading_error, heading_error_rate;
+            std::array<double, 4> state_error = {error.lateral_error, lateral_error_rate, error.heading_error,
+                                                 heading_error_rate};
 
             // Feedback control: u_fb = -K * x
-            double feedback_steering = -(K * state_error)(0);
+            double feedback_steering = 0.0;
+            for (int i = 0; i < 4; ++i) {
+                feedback_steering -= K[i] * state_error[i];
+            }
 
             // Feedforward control based on path curvature
             double feedforward_steering = std::atan2(constraints.wheelbase * error.path_curvature, 1.0);
@@ -181,59 +393,6 @@ namespace navcon {
             }
 
             return result;
-        }
-
-        Eigen::MatrixXd LQRFollower::solve_dare(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B,
-                                                const Eigen::MatrixXd &Q, const Eigen::MatrixXd &R) {
-            // Solve Discrete Algebraic Riccati Equation using iterative method
-            const int max_iterations = 150;
-            const double tolerance = 1e-5;
-
-            Eigen::MatrixXd P = Q; // Initial guess
-
-            for (int i = 0; i < max_iterations; ++i) {
-                Eigen::MatrixXd P_next =
-                    A.transpose() * P * A -
-                    A.transpose() * P * B * (R + B.transpose() * P * B).inverse() * B.transpose() * P * A + Q;
-
-                if ((P_next - P).norm() < tolerance) {
-                    return P_next;
-                }
-                P = P_next;
-            }
-
-            // Return last iteration if not converged
-            return P;
-        }
-
-        Eigen::MatrixXd LQRFollower::compute_lqr_gain(double velocity, const RobotConstraints &constraints, double dt) {
-            // State: [lateral_error, lateral_error_rate, heading_error, heading_error_rate]
-            // Control: [steering_angle]
-
-            // Linearized bicycle model matrices
-            Eigen::Matrix4d A;
-            A << 1.0, dt, 0.0, 0.0, 0.0, 1.0, velocity, 0.0, 0.0, 0.0, 1.0, dt, 0.0, 0.0, 0.0, 1.0;
-
-            Eigen::Vector4d B;
-            B << 0.0, 0.0, 0.0, velocity / constraints.wheelbase;
-
-            // Cost matrices (tunable parameters)
-            Eigen::Matrix4d Q;
-            Q << 1.0, 0.0, 0.0, 0.0, // Lateral error cost
-                0.0, 0.0, 0.0, 0.0,  // Lateral error rate cost
-                0.0, 0.0, 0.5, 0.0,  // Heading error cost
-                0.0, 0.0, 0.0, 0.0;  // Heading error rate cost
-
-            Eigen::Matrix<double, 1, 1> R;
-            R << 0.5; // Control effort cost
-
-            // Solve DARE
-            Eigen::MatrixXd P = solve_dare(A, B, Q, R);
-
-            // Compute LQR gain: K = (R + B^T P B)^-1 B^T P A
-            Eigen::MatrixXd K = (R + B.transpose() * P * B).inverse() * B.transpose() * P * A;
-
-            return K;
         }
 
     } // namespace path

@@ -22,8 +22,6 @@ set(params
 string(TOUPPER ${project_name} project_name_upper)
 option(${project_name_upper}_BUILD_EXAMPLES "Build examples" OFF)
 option(${project_name_upper}_ENABLE_TESTS "Enable tests" OFF)
-option(${project_name_upper}_ENABLE_LQR "Enable LQR controller" OFF)
-option(${project_name_upper}_ENABLE_MPC "Enable MPC controller" OFF)
 include(FetchContent)
 
 # --------------------------------------------------------------------------------------------------
@@ -37,79 +35,9 @@ FetchContent_Declare(bonsai GIT_REPOSITORY https://github.com/robolibs/bonsai.gi
 FetchContent_MakeAvailable(bonsai)
 list(APPEND ext_deps bonsai::bonsai)
 
-# Optional dependencies via pkg-config (for LQR, MPC, etc.)
-if(${project_name_upper}_ENABLE_LQR OR ${project_name_upper}_ENABLE_MPC)
-    if(${project_name_upper}_ENABLE_LQR)
-        message(STATUS "LQR controller requested - checking dependencies...")
-    endif()
-    if(${project_name_upper}_ENABLE_MPC)
-        message(STATUS "MPC controller requested - checking dependencies...")
-    endif()
-    find_package(PkgConfig)
-    # Check for Eigen3 (required for LQR and MPC)
-    find_package(Eigen3 QUIET)
-    if(Eigen3_FOUND)
-        message(STATUS "Found Eigen3: ${EIGEN3_VERSION}")
-        list(APPEND ext_deps Eigen3::Eigen)
-    else()
-        message(WARNING "Eigen3 not found - LQR/MPC cannot be enabled")
-    endif()
-
-    set(MPC_PACKAGES ipopt cppad)
-    foreach(pkg IN LISTS MPC_PACKAGES)
-        string(TOUPPER ${pkg} pkg_upper)
-        pkg_check_modules(${pkg_upper} ${pkg})
-        if(${pkg_upper}_FOUND)
-            message(STATUS "Found ${pkg}: ${${pkg_upper}_LIBRARIES}")
-            message(STATUS "  Include dirs: ${${pkg_upper}_INCLUDE_DIRS}")
-            message(STATUS "  Library dirs: ${${pkg_upper}_LIBRARY_DIRS}")
-            include_directories(${${pkg_upper}_INCLUDE_DIRS})
-            # Also add parent directory for CppAD which expects coin-or/IpIpoptApplication.hpp
-            if(pkg STREQUAL "ipopt")
-                foreach(incdir IN LISTS ${pkg_upper}_INCLUDE_DIRS)
-                    get_filename_component(parent_dir "${incdir}" DIRECTORY)
-                    include_directories("${parent_dir}")
-                endforeach()
-            endif()
-            link_directories(${${pkg_upper}_LIBRARY_DIRS})
-            # Use LINK_LIBRARIES for proper library path resolution
-            list(APPEND ext_deps ${${pkg_upper}_LINK_LIBRARIES})
-        else()
-            message(WARNING "${pkg} not found - MPC cannot be enabled")
-        endif()
-    endforeach()
-
-    # Enable LQR if Eigen3 is found
-    if(${project_name_upper}_ENABLE_LQR AND Eigen3_FOUND)
-        set(HAS_LQR ON)
-        message(STATUS "✓ LQR controller enabled (Eigen3)")
-    elseif(${project_name_upper}_ENABLE_LQR)
-        message(WARNING "✗ LQR controller disabled - missing Eigen3")
-    endif()
-
-    # Enable MPC if all dependencies found
-    if(${project_name_upper}_ENABLE_MPC AND Eigen3_FOUND AND IPOPT_FOUND AND CPPAD_FOUND)
-        set(HAS_MPC ON)
-        message(STATUS "✓ MPC controller enabled (Eigen3 + ipopt + cppad)")
-    elseif(${project_name_upper}_ENABLE_MPC)
-        message(WARNING "✗ MPC controller disabled - missing dependencies")
-    endif()
-else()
-    message(STATUS "Advanced controllers disabled (use -D${project_name_upper}_ENABLE_LQR=ON or -D${project_name_upper}_ENABLE_MPC=ON to enable)")
-endif()
-
 # --------------------------------------------------------------------------------------------------
 # Build library
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
-
-# Remove optional controller sources if their features are disabled
-if(NOT ${project_name_upper}_ENABLE_LQR)
-    list(FILTER SOURCES EXCLUDE REGEX ".*/path/lqr\\.cpp$")
-endif()
-
-if(NOT ${project_name_upper}_ENABLE_MPC)
-    list(FILTER SOURCES EXCLUDE REGEX ".*/(path|pred)/mpc\\.cpp$")
-endif()
 
 add_library(${project_name} ${SOURCES})
 add_library(${project_name}::${project_name} ALIAS ${project_name})
@@ -125,13 +53,6 @@ target_link_libraries(${project_name} PUBLIC ${ext_deps})
 target_compile_options(${project_name} PRIVATE ${params})
 
 # Set compile definitions for optional features
-if(HAS_LQR)
-    target_compile_definitions(${project_name} PUBLIC HAS_LQR)
-endif()
-if(HAS_MPC)
-    target_compile_definitions(${project_name} PUBLIC HAS_MPC)
-endif()
-
 if(HAS_RERUN OR ${project_name_upper}_BUILD_EXAMPLES)
     find_package(rerun_sdk REQUIRED)
     list(APPEND ext_deps rerun_sdk)
@@ -144,22 +65,8 @@ include_directories(include)
 # --------------------------------------------------------------------------------------------------
 include(GNUInstallDirs)
 
-# Install headers (excluding optional features that are disabled)
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    PATTERN "lqr.hpp" EXCLUDE
-    PATTERN "mpc.hpp" EXCLUDE
-)
-
-# Install optional headers only if enabled
-if(${project_name_upper}_ENABLE_LQR AND Eigen3_FOUND)
-    install(FILES include/navcon/path/lqr.hpp 
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/navcon/path)
-endif()
-
-if(${project_name_upper}_ENABLE_MPC AND Eigen3_FOUND AND IPOPT_FOUND AND CPPAD_FOUND)
-    install(FILES include/navcon/pred/mpc.hpp 
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/navcon/pred)
-endif()
+# Install all headers
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Install library and export targets
 install(TARGETS ${project_name} 
@@ -187,7 +94,7 @@ export(EXPORT ${project_name}Targets
 if(${project_name_upper}_BUILD_EXAMPLES)
   find_package(spdlog REQUIRED)
   list(APPEND ext_deps spdlog::spdlog)
-  
+
   file(GLOB exe CONFIGURE_DEPENDS examples/*.cpp)
 
   # ----------------------------------------------
