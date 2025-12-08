@@ -21,10 +21,7 @@
     "fmt.dev",
     "tbb.dev",
     "cli11@latest",
-    "libsodium@latest",
-    "ipopt@latest",
-    "cppad@latest",
-    "eigen@latest"
+    "libsodium@latest"
   ],
   "shell": {
     "init_hook": [
