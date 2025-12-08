@@ -114,7 +114,8 @@ namespace navcon {
             goal = get_current_tracking_goal(); // Point-based controllers need specific targets
         } else if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
                    controller_type == TrackerType::LQR || controller_type == TrackerType::MPC ||
-                   controller_type == TrackerType::MPC_TRAILER || controller_type == TrackerType::MPPI) {
+                   controller_type == TrackerType::MPC_TRAILER || controller_type == TrackerType::MPPI ||
+                   controller_type == TrackerType::SOC) {
             // Pure Pursuit, Stanley, LQR, MPC (including trailer variant), and MPPI use the path, but need goal set to
             // END of path for goal-reached check
             if (current_path.has_value() && !current_path->waypoints.empty()) {
@@ -144,7 +145,8 @@ namespace navcon {
             // Path-based controllers (Pure Pursuit, Stanley, LQR, MPC variants, MPPI) manage their own path index
             if (controller_type == TrackerType::PURE_PURSUIT || controller_type == TrackerType::STANLEY ||
                 controller_type == TrackerType::LQR || controller_type == TrackerType::MPC ||
-                controller_type == TrackerType::MPC_TRAILER || controller_type == TrackerType::MPPI) {
+                controller_type == TrackerType::MPC_TRAILER || controller_type == TrackerType::MPPI ||
+                controller_type == TrackerType::SOC) {
                 current_waypoint_index = controller->get_path_index();
 
                 // Check if controller reports goal reached (for path completion)
@@ -493,6 +495,15 @@ namespace navcon {
             config.goal_tolerance = 0.5f;
             config.angular_tolerance = 0.1f;
             controller = std::make_unique<pred::MPPIFollower>();
+            controller->set_config(config);
+            break;
+        }
+
+        case TrackerType::SOC: {
+            // SOC (stochastic optimal control) guided MPPI controller
+            config.goal_tolerance = 0.5f;
+            config.angular_tolerance = 0.1f;
+            controller = std::make_unique<pred::SOCFollower>();
             controller->set_config(config);
             break;
         }

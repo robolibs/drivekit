@@ -9,6 +9,7 @@ This package is based on the work of repositories:
 * [https://github.com/JunshengFu/Model-Predictive-Control](https://github.com/JunshengFu/Model-Predictive-Control) - Model Predictive Control implementation using IPOPT and CppAD
 * [https://github.com/artofnothingness/mppic](https://github.com/artofnothingness/mppic) - Model Predictive Path Integral
 * [https://github.com/sntubix/mppic](https://github.com/sntubix/mppic) - Model Predictive Path Integral 
+* [https://github.com/kohonda/proj-svg_mppic](https://github.com/kohonda/proj-svg_mppic) - Stein Variational Gradient Model Predictive Path Integral
 
 
 Papers:
@@ -20,3 +21,4 @@ Papers:
 .. [Walker11] Walker, A. (2011). "Hard Real-Time Motion Planning for Autonomous Vehicles", PhD thesis, Swinburne University.
 .. [Smart08] Royce, S. (2008). "Evolutionary Control of Autonomous Underwater Vehicles". PhD thesis, RMIT
 .. [Testouri23] Testouri, M, et al. (2023). "Towards a Safe Real-Time Motion Planning Framework for Autonomous Driving Systems: An MPPI Approach"
+.. [Honda23] Honda, K., et al. (2023). "Stein Variational Guided Model Predictive Path Integral Control: Proposal and Experiments with Fast Maneuvering Vehicles"
