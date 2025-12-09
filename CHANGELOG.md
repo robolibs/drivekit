@@ -4,13 +4,13 @@
 
 ### <!-- 2 -->🚜 Refactor
 
-- Refactor: Remove `navcon::factory` and update includes
+- Refactor: Remove `waypoint::factory` and update includes
 
 ## [0.1.5] - 2025-11-01
 
 ### <!-- 0 -->⛰️  Features
 
-- Refactor `navcon` for modular control and visualization
+- Refactor `waypoint` for modular control and visualization
 - Rename project, add logging, and new example
 
 ### <!-- 7 -->⚙️ Miscellaneous Tasks
@@ -21,7 +21,7 @@
 
 ### <!-- 0 -->⛰️  Features
 
-- Refactor `navcon` for modular control and visualization
+- Refactor `waypoint` for modular control and visualization
 - Rename project, add logging, and new example
 
 ### <!-- 7 -->⚙️ Miscellaneous Tasks

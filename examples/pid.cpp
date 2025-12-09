@@ -1,5 +1,5 @@
-#include "navcon.hpp"
-#include "navcon/utils/visualize.hpp"
+#include "waypoint.hpp"
+#include "waypoint/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -12,10 +12,10 @@ namespace {
         return {{0.0f, 0.0f}, {1.5f, 0.5f}, {3.0f, 1.5f}, {4.5f, 2.0f}, {6.0f, 3.2f}, {7.0f, 3.8f}, {8.0f, 4.0f}};
     }
 
-    navcon::Path make_visual_path(const std::vector<concord::Point> &points) {
-        navcon::Path path;
+    waypoint::Path make_visual_path(const std::vector<concord::Point> &points) {
+        waypoint::Path path;
         for (const auto &pt : points) {
-            navcon::Pose pose;
+            waypoint::Pose pose;
             pose.point = pt;
             pose.angle = concord::Euler{0.0f, 0.0f, 0.0f};
             path.waypoints.push_back(pose);
@@ -25,7 +25,7 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("navcon_pid_demo", "pid");
+    auto rec = std::make_shared<rerun::RecordingStream>("waypoint_pid_demo", "pid");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
@@ -36,7 +36,7 @@ int main() {
 
     spdlog::info("Visualization initialized for PID demo");
 
-    navcon::Tracker navigator(navcon::TrackerType::PID);
+    waypoint::Tracker navigator(waypoint::TrackerType::PID);
 
     auto params = navigator.get_controller_params();
     params.linear_kp = 2.5f;
@@ -44,7 +44,7 @@ int main() {
     params.angular_kd = 0.2f;
     navigator.set_controller_params(params);
 
-    navcon::RobotConstraints constraints;
+    waypoint::RobotConstraints constraints;
     constraints.max_linear_velocity = 0.35;
     constraints.max_angular_velocity = 1.0;
     constraints.wheelbase = 0.45;
@@ -57,22 +57,22 @@ int main() {
         return 1;
     }
 
-    navcon::visualize::show_path(rec, make_visual_path(waypoints), "pid_path", rerun::Color(0, 120, 255));
+    waypoint::visualize::show_path(rec, make_visual_path(waypoints), "pid_path", rerun::Color(0, 120, 255));
 
     auto set_navigation_goal = [&](size_t index) {
-        navcon::NavigationGoal next_goal(waypoints[index], 0.2f, 0.35f);
+        waypoint::NavigationGoal next_goal(waypoints[index], 0.2f, 0.35f);
         navigator.set_goal(next_goal);
 
-        navcon::Goal viz_goal;
+        waypoint::Goal viz_goal;
         viz_goal.target_pose = concord::Pose{next_goal.target, concord::Euler{0.0f, 0.0f, 0.0f}};
         viz_goal.tolerance_position = next_goal.tolerance;
-        navcon::visualize::show_goal(rec, viz_goal, "pid_goal");
+        waypoint::visualize::show_goal(rec, viz_goal, "pid_goal");
     };
 
     size_t waypoint_index = 0;
     set_navigation_goal(waypoint_index);
 
-    navcon::RobotState robot_state;
+    waypoint::RobotState robot_state;
     robot_state.pose.point = concord::Point{0.0, 0.0};
     robot_state.pose.angle.yaw = 0.0;
 
@@ -94,7 +94,7 @@ int main() {
 
             current_time += dt;
 
-            navcon::visualize::show_robot_state(rec, robot_state, "robot_pid", rerun::Color(0, 120, 255));
+            waypoint::visualize::show_robot_state(rec, robot_state, "robot_pid", rerun::Color(0, 120, 255));
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
