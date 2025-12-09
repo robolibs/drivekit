@@ -12,6 +12,10 @@ namespace navcon {
                                                          const WorldConstraints *dynamic_constraints) {
             VelocityCommand cmd;
 
+            // Determine steering type
+            const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
+                                        constraints.steering_type == SteeringType::SKID_STEER);
+
             // Check if we have a path
             bool has_path = !path_.waypoints.empty();
             if (!has_path) {
@@ -61,15 +65,26 @@ namespace navcon {
             double delta = heading_error + delta_e;
 
             // Normalize to [-pi, pi]
-            while (delta > M_PI) delta -= 2 * M_PI;
-            while (delta < -M_PI) delta += 2 * M_PI;
+            delta = normalize_angle(delta);
 
-            // Set angular velocity
-            cmd.angular_velocity = delta;
+            double angular_velocity;
+            if (is_diff_drive) {
+                // For differential drive: apply gain to convert steering command to angular velocity
+                // Diff drive can turn in place, so we use a direct proportional relationship
+                double kp_angular = 2.0;
+                angular_velocity = kp_angular * delta;
+            } else {
+                // For Ackermann: delta is a steering angle, convert based on velocity and wheelbase
+                // omega = v * tan(delta) / L
+                double wheelbase = constraints.wheelbase > 0.0 ? constraints.wheelbase : 1.0;
+                angular_velocity = velocity * std::tan(delta) / wheelbase;
+            }
 
             // Clamp angular velocity
-            cmd.angular_velocity =
-                std::clamp(cmd.angular_velocity, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+            angular_velocity =
+                std::clamp(angular_velocity, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+
+            cmd.angular_velocity = angular_velocity;
 
             // Update status
             status_.distance_to_goal = current_state.pose.point.distance_to(goal.target_pose.point);

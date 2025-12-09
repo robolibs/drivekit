@@ -1,4 +1,4 @@
-﻿#include "navcon/path/lqr.hpp"
+#include "navcon/path/lqr.hpp"
 #include "navcon/types.hpp"
 #include <array>
 #include <cmath>
@@ -154,8 +154,12 @@ namespace navcon {
             }
 
             // Compute LQR gain: K (1x4 row) given velocity and constraints
-            std::array<double, 4> compute_lqr_gain(double velocity, const RobotConstraints &constraints, double dt) {
-                // Linearized bicycle model matrices
+            // For differential drive, the control input is angular velocity directly
+            // For Ackermann, the control input is steering angle
+            std::array<double, 4> compute_lqr_gain(double velocity, const RobotConstraints &constraints, double dt,
+                                                   bool is_diff_drive) {
+                // Linearized model matrices
+                // State: [lateral_error, lateral_error_rate, heading_error, heading_error_rate]
                 Mat4 A{};
                 A[0 * 4 + 0] = 1.0;
                 A[0 * 4 + 1] = dt;
@@ -181,7 +185,13 @@ namespace navcon {
                 B[0] = 0.0;
                 B[1] = 0.0;
                 B[2] = 0.0;
-                B[3] = velocity / constraints.wheelbase;
+                if (is_diff_drive) {
+                    // For diff drive: control input (angular velocity) directly affects heading rate
+                    B[3] = 1.0;
+                } else {
+                    // For Ackermann/bicycle: steering angle affects heading via v/L
+                    B[3] = velocity / constraints.wheelbase;
+                }
 
                 // Cost matrices (tunable parameters)
                 Mat4 Q = mat4_zero();
@@ -251,6 +261,10 @@ namespace navcon {
             previous_lateral_error_ = error.lateral_error;
             previous_heading_error_ = error.heading_error;
 
+            // Determine steering type
+            const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
+                                        constraints.steering_type == SteeringType::SKID_STEER);
+
             // Get current velocity
             double velocity = current_state.velocity.linear;
             if (std::abs(velocity) < 0.01) {
@@ -258,35 +272,17 @@ namespace navcon {
             }
 
             // Compute LQR gain vector (1x4 row)
-            std::array<double, 4> K = compute_lqr_gain(velocity, constraints, dt);
+            std::array<double, 4> K = compute_lqr_gain(velocity, constraints, dt, is_diff_drive);
 
             // State vector: [lateral_error, lateral_error_rate, heading_error, heading_error_rate]
             std::array<double, 4> state_error = {error.lateral_error, lateral_error_rate, error.heading_error,
                                                  heading_error_rate};
 
             // Feedback control: u_fb = -K * x
-            double feedback_steering = 0.0;
+            double feedback_control = 0.0;
             for (int i = 0; i < 4; ++i) {
-                feedback_steering -= K[i] * state_error[i];
+                feedback_control -= K[i] * state_error[i];
             }
-
-            // Feedforward control based on path curvature
-            double feedforward_steering = std::atan2(constraints.wheelbase * error.path_curvature, 1.0);
-
-            // Total steering command
-            double steering_angle = feedforward_steering + feedback_steering;
-
-            // Debug output
-            // static int lqr_debug = 0;
-            // if (lqr_debug++ % 100 == 0) {
-            //     std::cout << "LQR DEBUG: lat_err=" << error.lateral_error << ", head_err=" << error.heading_error
-            //               << ", ff_steer=" << feedforward_steering << ", fb_steer=" << feedback_steering
-            //               << ", total_steer=" << steering_angle << std::endl;
-            // }
-
-            // Clamp steering to limits
-            steering_angle =
-                std::clamp(steering_angle, -constraints.max_steering_angle, constraints.max_steering_angle);
 
             // Update status
             status_.distance_to_goal = current_state.pose.point.distance_to(goal.target_pose.point);
@@ -298,15 +294,35 @@ namespace navcon {
             // Set linear velocity (constant for now, could be adaptive)
             double linear_velocity = constraints.max_linear_velocity;
 
-            // For differential drive: convert steering angle to angular velocity
-            // Use direct proportional control on the steering angle
-            // This is more effective than the bicycle model for diff drive robots
-            double kp_steer = 2.0; // Proportional gain for steering to angular velocity
-            double angular_velocity = kp_steer * steering_angle;
+            double angular_velocity;
+            if (is_diff_drive) {
+                // For differential drive: LQR output is angular velocity directly
+                // Add feedforward based on path curvature
+                double feedforward_omega = velocity * error.path_curvature;
+                angular_velocity = feedforward_omega + feedback_control;
 
-            // Clamp angular velocity
-            angular_velocity =
-                std::clamp(angular_velocity, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+                // Clamp angular velocity
+                angular_velocity =
+                    std::clamp(angular_velocity, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+            } else {
+                // For Ackermann: LQR output is steering angle
+                // Feedforward control based on path curvature
+                double feedforward_steering = std::atan2(constraints.wheelbase * error.path_curvature, 1.0);
+                double steering_angle = feedforward_steering + feedback_control;
+
+                // Clamp steering to limits
+                steering_angle =
+                    std::clamp(steering_angle, -constraints.max_steering_angle, constraints.max_steering_angle);
+
+                // Convert steering angle to angular velocity for output
+                // Use proportional gain for smoother control
+                double kp_steer = 2.0;
+                angular_velocity = kp_steer * steering_angle;
+
+                // Clamp angular velocity
+                angular_velocity =
+                    std::clamp(angular_velocity, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+            }
 
             // Convert to output units based on configuration
             if (config_.output_units == OutputUnits::NORMALIZED) {

@@ -54,6 +54,8 @@ namespace navcon {
             const size_t N = mppi_config_.horizon_steps;
             const size_t K = mppi_config_.num_samples;
             const double dt_internal = mppi_config_.dt;
+            const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
+                                        constraints.steering_type == SteeringType::SKID_STEER);
 
             // Compute path error and reference trajectory (mirrors MPCFollower)
             PathError error = calculate_path_error(current_state);
@@ -97,19 +99,33 @@ namespace navcon {
                     noise_accel[k][i] = eps_acc;
 
                     // Combine with mean control sequence
-                    double delta = mean_steering_[i] + eps_delta;
+                    double delta_or_omega = mean_steering_[i] + eps_delta;
                     double a = mean_acceleration_[i] + eps_acc;
 
-                    // Clamp controls to robot constraints
-                    delta = std::clamp(delta, -constraints.max_steering_angle, constraints.max_steering_angle);
+                    // Clamp controls to robot constraints based on steering type
+                    if (is_diff_drive) {
+                        // For diff drive: first control is angular velocity
+                        delta_or_omega = std::clamp(delta_or_omega, -constraints.max_angular_velocity,
+                                                    constraints.max_angular_velocity);
+                    } else {
+                        // For Ackermann: first control is steering angle
+                        delta_or_omega =
+                            std::clamp(delta_or_omega, -constraints.max_steering_angle, constraints.max_steering_angle);
+                    }
                     a = std::clamp(a, -constraints.max_linear_acceleration, constraints.max_linear_acceleration);
 
-                    // Kinematic bicycle model integration
+                    // Kinematic model integration
                     double Lf = constraints.wheelbase;
 
                     x += v * std::cos(yaw) * dt_internal;
                     y += v * std::sin(yaw) * dt_internal;
-                    yaw += v * delta / Lf * dt_internal;
+                    if (is_diff_drive) {
+                        // Differential drive: direct angular velocity control
+                        yaw += delta_or_omega * dt_internal;
+                    } else {
+                        // Ackermann/bicycle model: steering angle based
+                        yaw += v * delta_or_omega / Lf * dt_internal;
+                    }
                     yaw = normalize_angle(yaw);
                     v += a * dt_internal;
                     v = std::clamp(v, constraints.min_linear_velocity, constraints.max_linear_velocity);
@@ -140,7 +156,7 @@ namespace navcon {
                     cost += mppi_config_.weight_cte * cte * cte;
                     cost += mppi_config_.weight_epsi * epsi * epsi;
                     cost += mppi_config_.weight_vel * vel_error * vel_error;
-                    cost += mppi_config_.weight_steering * delta * delta;
+                    cost += mppi_config_.weight_steering * delta_or_omega * delta_or_omega;
                     cost += mppi_config_.weight_acceleration * a * a;
 
                     sample_cost += cost * dt_internal;
@@ -191,14 +207,19 @@ namespace navcon {
                 mean_acceleration_[i] += d_acc;
 
                 // Keep updated means within constraints
-                mean_steering_[i] =
-                    std::clamp(mean_steering_[i], -constraints.max_steering_angle, constraints.max_steering_angle);
+                if (is_diff_drive) {
+                    mean_steering_[i] = std::clamp(mean_steering_[i], -constraints.max_angular_velocity,
+                                                   constraints.max_angular_velocity);
+                } else {
+                    mean_steering_[i] =
+                        std::clamp(mean_steering_[i], -constraints.max_steering_angle, constraints.max_steering_angle);
+                }
                 mean_acceleration_[i] = std::clamp(mean_acceleration_[i], -constraints.max_linear_acceleration,
                                                    constraints.max_linear_acceleration);
             }
 
             // Extract first control input (receding horizon)
-            double steering = mean_steering_.empty() ? 0.0 : mean_steering_.front();
+            double steering_or_omega = mean_steering_.empty() ? 0.0 : mean_steering_.front();
             double acceleration = mean_acceleration_.empty() ? 0.0 : mean_acceleration_.front();
 
             // Shift mean sequences for next iteration
@@ -226,29 +247,42 @@ namespace navcon {
                 status_.heading_error = std::abs(cur_error.epsi);
             }
 
-            // Convert steering/acceleration to command velocities
+            // Convert steering/angular velocity and acceleration to command velocities
             // Use reference velocity as base, modulated by acceleration
             double target_velocity = mppi_config_.ref_velocity + acceleration * dt_internal;
 
-            // Clamp velocity respecting robot constraints; for Ackermann we usually avoid reverse
+            // Clamp velocity respecting robot constraints
             double min_vel = constraints.min_linear_velocity;
             if (!config_.allow_reverse) {
                 min_vel = 0.0;
             }
             target_velocity = std::clamp(target_velocity, min_vel, constraints.max_linear_velocity);
 
-            double steering_angle =
-                std::clamp(steering, -constraints.max_steering_angle, constraints.max_steering_angle);
+            double angular_output;
+            if (is_diff_drive) {
+                // For diff drive: steering_or_omega is angular velocity
+                angular_output =
+                    std::clamp(steering_or_omega, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+            } else {
+                // For Ackermann: steering_or_omega is steering angle
+                angular_output =
+                    std::clamp(steering_or_omega, -constraints.max_steering_angle, constraints.max_steering_angle);
+            }
 
             if (config_.output_units == OutputUnits::NORMALIZED) {
                 cmd.linear_velocity =
                     (constraints.max_linear_velocity > 0.0) ? target_velocity / constraints.max_linear_velocity : 0.0;
-                cmd.angular_velocity =
-                    (constraints.max_steering_angle > 0.0) ? steering_angle / constraints.max_steering_angle : 0.0;
+                if (is_diff_drive) {
+                    cmd.angular_velocity = (constraints.max_angular_velocity > 0.0)
+                                               ? angular_output / constraints.max_angular_velocity
+                                               : 0.0;
+                } else {
+                    cmd.angular_velocity =
+                        (constraints.max_steering_angle > 0.0) ? angular_output / constraints.max_steering_angle : 0.0;
+                }
             } else {
                 cmd.linear_velocity = target_velocity;
-                // For Ackermann steering, angular_velocity carries the steering angle
-                cmd.angular_velocity = steering_angle;
+                cmd.angular_velocity = angular_output;
             }
 
             cmd.valid = true;
