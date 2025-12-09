@@ -1,5 +1,5 @@
-#include "waypoint.hpp"
-#include "waypoint/utils/visualize.hpp"
+#include "drivekit.hpp"
+#include "drivekit/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -19,7 +19,7 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("waypoint_lqr_demo", "lqr");
+    auto rec = std::make_shared<rerun::RecordingStream>("drivekit_lqr_demo", "lqr");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
@@ -30,13 +30,13 @@ int main() {
 
     spdlog::info("Visualization initialized for LQR demo");
 
-    waypoint::Tracker navigator(waypoint::TrackerType::LQR);
+    drivekit::Tracker navigator(drivekit::TrackerType::LQR);
 
     auto params = navigator.get_controller_params();
     params.lookahead_distance = 2.5f;
     navigator.set_controller_params(params);
 
-    waypoint::RobotConstraints constraints;
+    drivekit::RobotConstraints constraints;
     constraints.max_linear_velocity = 1.0;
     constraints.max_angular_velocity = 1.0;
     constraints.wheelbase = 0.5;
@@ -44,7 +44,7 @@ int main() {
 
     navigator.init(constraints, rec);
 
-    waypoint::PathGoal path_goal(build_s_shape_path(),
+    drivekit::PathGoal path_goal(build_s_shape_path(),
                                0.5f, // tolerance
                                0.8f, // max speed
                                false);
@@ -52,7 +52,7 @@ int main() {
     navigator.set_path(path_goal);
     navigator.smoothen(25.0f); // Smooth interpolation
 
-    waypoint::RobotState robot_state;
+    drivekit::RobotState robot_state;
     robot_state.pose.point = concord::Point{0.0, 0.0}; // Start on path
     robot_state.pose.angle.yaw = 0.0;
     robot_state.velocity.linear = 0.0;
@@ -98,7 +98,7 @@ int main() {
             current_time += dt;
 
             // Visualize
-            waypoint::visualize::show_robot_state(rec, robot_state, "robot_lqr",
+            drivekit::visualize::show_robot_state(rec, robot_state, "robot_lqr",
                                                           rerun::Color(255, 165, 0)); // Orange color
             navigator.tock();
 

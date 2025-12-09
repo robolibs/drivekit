@@ -1,5 +1,5 @@
-#include "waypoint.hpp"
-#include "waypoint/utils/visualize.hpp"
+#include "drivekit.hpp"
+#include "drivekit/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -19,7 +19,7 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("waypoint_soc_demo", "soc");
+    auto rec = std::make_shared<rerun::RecordingStream>("drivekit_soc_demo", "soc");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
@@ -30,10 +30,10 @@ int main() {
 
     spdlog::info("Visualization initialized for SOC demo");
 
-    waypoint::Tracker navigator(waypoint::TrackerType::SOC);
+    drivekit::Tracker navigator(drivekit::TrackerType::SOC);
 
     // Configure SOC parameters
-    auto soc_controller = dynamic_cast<waypoint::pred::SOCFollower *>(navigator.get_controller());
+    auto soc_controller = dynamic_cast<drivekit::pred::SOCFollower *>(navigator.get_controller());
     if (soc_controller) {
         auto soc_config = soc_controller->get_soc_config();
         soc_config.horizon_steps = 20;
@@ -61,7 +61,7 @@ int main() {
                      soc_config.num_samples);
     }
 
-    waypoint::RobotConstraints constraints;
+    drivekit::RobotConstraints constraints;
     constraints.max_linear_velocity = 2.0;
     constraints.max_angular_velocity = 1.5;
     constraints.max_linear_acceleration = 1.0;
@@ -70,7 +70,7 @@ int main() {
 
     navigator.init(constraints, rec);
 
-    waypoint::PathGoal path_goal(build_s_shape_path(),
+    drivekit::PathGoal path_goal(build_s_shape_path(),
                                0.5f, // tolerance
                                1.0f, // max speed
                                false);
@@ -78,7 +78,7 @@ int main() {
     navigator.set_path(path_goal);
     navigator.smoothen(25.0f); // Smooth interpolation
 
-    waypoint::RobotState robot_state;
+    drivekit::RobotState robot_state;
     robot_state.pose.point = concord::Point{0.0, 0.0}; // Start on path
     robot_state.pose.angle.yaw = 0.0;
     robot_state.velocity.linear = 0.0;
@@ -130,7 +130,7 @@ int main() {
             current_time += dt;
 
             // Visualize
-            waypoint::visualize::show_robot_state(rec, robot_state, "robot_soc",
+            drivekit::visualize::show_robot_state(rec, robot_state, "robot_soc",
                                                 rerun::Color(34, 139, 34)); // Forest green for SOC
             navigator.tock();
 

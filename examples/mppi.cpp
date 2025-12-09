@@ -1,5 +1,5 @@
-#include "waypoint.hpp"
-#include "waypoint/utils/visualize.hpp"
+#include "drivekit.hpp"
+#include "drivekit/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -19,7 +19,7 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("waypoint_mppi_demo", "mppi");
+    auto rec = std::make_shared<rerun::RecordingStream>("drivekit_mppi_demo", "mppi");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
@@ -30,10 +30,10 @@ int main() {
 
     spdlog::info("Visualization initialized for MPPI demo");
 
-    waypoint::Tracker navigator(waypoint::TrackerType::MPPI);
+    drivekit::Tracker navigator(drivekit::TrackerType::MPPI);
 
     // Configure MPPI parameters
-    auto mppi_controller = dynamic_cast<waypoint::pred::MPPIFollower *>(navigator.get_controller());
+    auto mppi_controller = dynamic_cast<drivekit::pred::MPPIFollower *>(navigator.get_controller());
     if (mppi_controller) {
         auto mppi_config = mppi_controller->get_mppi_config();
         mppi_config.horizon_steps = 20;
@@ -53,7 +53,7 @@ int main() {
                      mppi_config.horizon_steps, mppi_config.dt, mppi_config.ref_velocity, mppi_config.num_samples);
     }
 
-    waypoint::RobotConstraints constraints;
+    drivekit::RobotConstraints constraints;
     constraints.max_linear_velocity = 2.0;
     constraints.max_angular_velocity = 1.5;
     constraints.max_linear_acceleration = 1.0;
@@ -62,7 +62,7 @@ int main() {
 
     navigator.init(constraints, rec);
 
-    waypoint::PathGoal path_goal(build_s_shape_path(),
+    drivekit::PathGoal path_goal(build_s_shape_path(),
                                0.5f, // tolerance
                                1.0f, // max speed
                                false);
@@ -70,7 +70,7 @@ int main() {
     navigator.set_path(path_goal);
     navigator.smoothen(25.0f); // Smooth interpolation
 
-    waypoint::RobotState robot_state;
+    drivekit::RobotState robot_state;
     robot_state.pose.point = concord::Point{0.0, 0.0}; // Start on path
     robot_state.pose.angle.yaw = 0.0;
     robot_state.velocity.linear = 0.0;
@@ -121,7 +121,7 @@ int main() {
             current_time += dt;
 
             // Visualize
-            waypoint::visualize::show_robot_state(rec, robot_state, "robot_mppi",
+            drivekit::visualize::show_robot_state(rec, robot_state, "robot_mppi",
                                                 rerun::Color(255, 140, 0)); // Dark orange for MPPI
             navigator.tock();
 

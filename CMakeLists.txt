@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(project_name waypoint)
+set(project_name drivekit)
 project(${project_name} VERSION 0.1.6 LANGUAGES CXX)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
