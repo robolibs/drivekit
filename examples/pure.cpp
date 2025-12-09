@@ -1,5 +1,5 @@
-#include "navcon.hpp"
-#include "navcon/utils/visualize.hpp"
+#include "waypoint.hpp"
+#include "waypoint/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -19,7 +19,7 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("navcon_pure_pursuit_demo", "pure_pursuit");
+    auto rec = std::make_shared<rerun::RecordingStream>("waypoint_pure_pursuit_demo", "pure_pursuit");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
@@ -30,20 +30,20 @@ int main() {
 
     spdlog::info("Visualization initialized for Pure Pursuit demo");
 
-    navcon::Tracker navigator(navcon::TrackerType::PURE_PURSUIT);
+    waypoint::Tracker navigator(waypoint::TrackerType::PURE_PURSUIT);
 
     auto params = navigator.get_controller_params();
     params.lookahead_distance = 2.5f;
     navigator.set_controller_params(params);
 
-    navcon::RobotConstraints constraints;
+    waypoint::RobotConstraints constraints;
     constraints.max_linear_velocity = 1.0;
     constraints.max_angular_velocity = 1.0;
     constraints.wheelbase = 0.5;
 
     navigator.init(constraints, rec);
 
-    navcon::PathGoal path_goal(build_s_shape_path(),
+    waypoint::PathGoal path_goal(build_s_shape_path(),
                                0.5f, // tolerance
                                0.8f, // max speed
                                false);
@@ -51,7 +51,7 @@ int main() {
     navigator.set_path(path_goal);
     navigator.smoothen(25.0f); // Match smoothing cadence from navi example
 
-    navcon::RobotState robot_state;
+    waypoint::RobotState robot_state;
     robot_state.pose.point = concord::Point{0.0, 0.0};
     robot_state.pose.angle.yaw = 0.0;
 
@@ -73,7 +73,7 @@ int main() {
 
             current_time += dt;
 
-            navcon::visualize::show_robot_state(rec, robot_state, "robot_pure_pursuit",
+            waypoint::visualize::show_robot_state(rec, robot_state, "robot_pure_pursuit",
                                                           rerun::Color(0, 255, 0));
             navigator.tock();
 

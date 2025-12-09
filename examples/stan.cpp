@@ -1,5 +1,5 @@
-#include "navcon.hpp"
-#include "navcon/utils/visualize.hpp"
+#include "waypoint.hpp"
+#include "waypoint/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -19,7 +19,7 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("navcon_stanley_demo", "stanley");
+    auto rec = std::make_shared<rerun::RecordingStream>("waypoint_stanley_demo", "stanley");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
@@ -30,26 +30,26 @@ int main() {
 
     spdlog::info("Visualization initialized for Stanley demo");
 
-    navcon::Tracker navigator(navcon::TrackerType::STANLEY);
+    waypoint::Tracker navigator(waypoint::TrackerType::STANLEY);
 
     auto params = navigator.get_controller_params();
     params.cross_track_gain = 2.5f;
     params.softening_gain = 1.0f;
     navigator.set_controller_params(params);
 
-    navcon::RobotConstraints constraints;
+    waypoint::RobotConstraints constraints;
     constraints.max_linear_velocity = 1.0;
     constraints.max_angular_velocity = 1.0;
     constraints.wheelbase = 0.5;
 
     navigator.init(constraints, rec);
 
-    navcon::PathGoal path_goal(build_s_shape_path(), 0.5f, 0.8f, false);
+    waypoint::PathGoal path_goal(build_s_shape_path(), 0.5f, 0.8f, false);
 
     navigator.set_path(path_goal);
     navigator.smoothen(25.0f); // Match smoothing cadence from navi example
 
-    navcon::RobotState robot_state;
+    waypoint::RobotState robot_state;
     robot_state.pose.point = concord::Point{0.0, 0.0};
     robot_state.pose.angle.yaw = 0.0;
 
@@ -71,7 +71,7 @@ int main() {
 
             current_time += dt;
 
-            navcon::visualize::show_robot_state(rec, robot_state, "robot_stanley", rerun::Color(255, 165, 0));
+            waypoint::visualize::show_robot_state(rec, robot_state, "robot_stanley", rerun::Color(255, 165, 0));
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {

@@ -1,5 +1,5 @@
-#include "navcon.hpp"
-#include "navcon/utils/visualize.hpp"
+#include "waypoint.hpp"
+#include "waypoint/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -19,7 +19,7 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("navcon_mpc_demo", "mpc");
+    auto rec = std::make_shared<rerun::RecordingStream>("waypoint_mpc_demo", "mpc");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
@@ -30,10 +30,10 @@ int main() {
 
     spdlog::info("Visualization initialized for MPC demo");
 
-    navcon::Tracker navigator(navcon::TrackerType::MPC);
+    waypoint::Tracker navigator(waypoint::TrackerType::MPC);
 
     // Get and configure MPC parameters
-    auto mpc_controller = dynamic_cast<navcon::pred::MPCFollower *>(navigator.get_controller());
+    auto mpc_controller = dynamic_cast<waypoint::pred::MPCFollower *>(navigator.get_controller());
     if (mpc_controller) {
         auto mpc_config = mpc_controller->get_mpc_config();
         mpc_config.horizon_steps = 10;              // Prediction horizon
@@ -53,7 +53,7 @@ int main() {
                      mpc_config.ref_velocity);
     }
 
-    navcon::RobotConstraints constraints;
+    waypoint::RobotConstraints constraints;
     constraints.max_linear_velocity = 2.0;
     constraints.max_angular_velocity = 1.5;
     constraints.max_linear_acceleration = 1.0;
@@ -62,7 +62,7 @@ int main() {
 
     navigator.init(constraints, rec);
 
-    navcon::PathGoal path_goal(build_s_shape_path(),
+    waypoint::PathGoal path_goal(build_s_shape_path(),
                                0.5f, // tolerance
                                1.0f, // max speed
                                false);
@@ -70,7 +70,7 @@ int main() {
     navigator.set_path(path_goal);
     navigator.smoothen(25.0f); // Smooth interpolation
 
-    navcon::RobotState robot_state;
+    waypoint::RobotState robot_state;
     robot_state.pose.point = concord::Point{0.0, 0.0}; // Start on path
     robot_state.pose.angle.yaw = 0.0;
     robot_state.velocity.linear = 0.0;
@@ -122,7 +122,7 @@ int main() {
             current_time += dt;
 
             // Visualize
-            navcon::visualize::show_robot_state(rec, robot_state, "robot_mpc",
+            waypoint::visualize::show_robot_state(rec, robot_state, "robot_mpc",
                                                           rerun::Color(0, 191, 255)); // Deep sky blue color
             navigator.tock();
 
