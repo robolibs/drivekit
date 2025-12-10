@@ -11,7 +11,7 @@ add_rules("mode.debug", "mode.release")
 -- Compiler warnings and flags
 add_cxxflags("-Wall", "-Wextra", "-Wpedantic")
 add_cxxflags("-Wno-reorder", "-Wno-narrowing", "-Wno-array-bounds")
-add_cxxflags("-Wno-unused-variable", "-Wno-unused-parameter", "-Wno-stringop-overflow")
+add_cxxflags("-Wno-unused-variable", "-Wno-unused-parameter", "-Wno-stringop-overflow", "-Wno-unused-but-set-variable")
 
 -- Add global search paths for packages in ~/.local
 local home = os.getenv("HOME")
@@ -121,7 +121,6 @@ package_end()
 add_requires("concord", "bonsai")
 
 if has_config("examples") then
-    add_requires("spdlog", {system = true})
     add_requires("rerun_sdk")
 elseif has_config("rerun") then
     add_requires("rerun_sdk")
@@ -163,15 +162,15 @@ target("drivekit")
     end)
 target_end()
 
--- Examples
-if has_config("examples") then
+-- Examples (only build when drivekit is the main project)
+if has_config("examples") and os.projectdir() == os.curdir() then
     for _, filepath in ipairs(os.files("examples/*.cpp")) do
         local filename = path.basename(filepath)
         target(filename)
             set_kind("binary")
             add_files(filepath)
             add_deps("drivekit")
-            add_packages("concord", "bonsai", "spdlog")
+            add_packages("concord", "bonsai")
 
             -- Always try to add rerun_sdk for examples (matching CMake behavior)
             on_load(function (target)
@@ -186,8 +185,8 @@ if has_config("examples") then
     end
 end
 
--- Tests
-if has_config("tests") then
+-- Tests (only build when drivekit is the main project)
+if has_config("tests") and os.projectdir() == os.curdir() then
     for _, filepath in ipairs(os.files("test/*.cpp")) do
         local filename = path.basename(filepath)
         target(filename)

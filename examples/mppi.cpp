@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <thread>
 
 namespace {
@@ -28,7 +27,7 @@ int main() {
     rec->log("", rerun::Clear::RECURSIVE);
     rec->log_with_static("", true, rerun::Clear::RECURSIVE);
 
-    spdlog::info("Visualization initialized for MPPI demo");
+    std::cout << "Visualization initialized for MPPI demo\n";
 
     drivekit::Tracker navigator(drivekit::TrackerType::MPPI);
 
@@ -49,8 +48,7 @@ int main() {
         mppi_config.weight_acceleration = 5.0;
         mppi_config.ref_velocity = 1.0;
         mppi_controller->set_mppi_config(mppi_config);
-        spdlog::info("MPPI configuration set: horizon={}, dt={}, ref_vel={}, samples={}",
-                     mppi_config.horizon_steps, mppi_config.dt, mppi_config.ref_velocity, mppi_config.num_samples);
+        std::cout << "MPPI configuration set: horizon={}, dt={}, ref_vel={}, samples={}\n";
     }
 
     drivekit::RobotConstraints constraints;
@@ -81,10 +79,10 @@ int main() {
     float last_print_time = 0.0f;
     float current_time = 0.0f;
 
-    spdlog::info("Starting MPPI path tracking...");
+    std::cout << "Starting MPPI path tracking...\n";
     if (mppi_controller) {
         auto cfg = mppi_controller->get_mppi_config();
-        spdlog::info("MPPI: horizon={} steps, dt={} s, samples={}", cfg.horizon_steps, cfg.dt, cfg.num_samples);
+        std::cout << "MPPI: horizon={} steps, dt={} s, samples={}\n";
     }
 
     int iteration = 0;
@@ -126,14 +124,13 @@ int main() {
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
-                spdlog::info("MPPI: tracking path... (vel={:.2f} m/s, omega={:.2f} rad/s)", robot_state.velocity.linear,
-                             robot_state.velocity.angular);
+                std::cout << "MPPI: tracking path... (vel={:.2f} m/s, omega={:.2f} rad/s)\n";
                 last_print_time = current_time;
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         } else {
-            spdlog::warn("MPPI command invalid at iteration {}", iteration);
+            std::cerr << "MPPI command invalid at iteration {}\n";
 
             // Slow down if we fail to get a valid command
             robot_state.velocity.linear *= 0.8;
@@ -147,9 +144,9 @@ int main() {
     }
 
     if (navigator.is_path_completed()) {
-        spdlog::info("✓ MPPI path tracking completed successfully in {} iterations!", iteration);
+        std::cout << "✓ MPPI path tracking completed successfully in {} iterations!\n";
     } else {
-        spdlog::warn("✗ MPPI run timed out before finishing the path ({} iterations)", iteration);
+        std::cerr << "✗ MPPI run timed out before finishing the path ({} iterations)\n";
     }
 
     return 0;

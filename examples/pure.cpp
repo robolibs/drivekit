@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <thread>
 
 namespace {
@@ -28,7 +27,7 @@ int main() {
     rec->log("", rerun::Clear::RECURSIVE);
     rec->log_with_static("", true, rerun::Clear::RECURSIVE);
 
-    spdlog::info("Visualization initialized for Pure Pursuit demo");
+    std::cout << "Visualization initialized for Pure Pursuit demo\n";
 
     drivekit::Tracker navigator(drivekit::TrackerType::PURE_PURSUIT);
 
@@ -78,7 +77,7 @@ int main() {
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
-                spdlog::info("Pure Pursuit: tracking path...");
+                std::cout << "Pure Pursuit: tracking path...\n";
                 last_print_time = current_time;
             }
 
@@ -87,9 +86,9 @@ int main() {
     }
 
     if (navigator.is_path_completed()) {
-        spdlog::info("Pure Pursuit path completed!");
+        std::cout << "Pure Pursuit path completed!\n";
     } else {
-        spdlog::warn("Pure Pursuit run timed out before finishing the path");
+        std::cerr << "Pure Pursuit run timed out before finishing the path\n";
     }
 
     return 0;

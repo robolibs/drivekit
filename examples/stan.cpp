@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <thread>
 
 namespace {
@@ -28,7 +27,7 @@ int main() {
     rec->log("", rerun::Clear::RECURSIVE);
     rec->log_with_static("", true, rerun::Clear::RECURSIVE);
 
-    spdlog::info("Visualization initialized for Stanley demo");
+    std::cout << "Visualization initialized for Stanley demo\n";
 
     drivekit::Tracker navigator(drivekit::TrackerType::STANLEY);
 
@@ -75,7 +74,7 @@ int main() {
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
-                spdlog::info("Stanley: tracking path...");
+                std::cout << "Stanley: tracking path...\n";
                 last_print_time = current_time;
             }
 
@@ -84,9 +83,9 @@ int main() {
     }
 
     if (navigator.is_path_completed()) {
-        spdlog::info("Stanley path completed!");
+        std::cout << "Stanley path completed!\n";
     } else {
-        spdlog::warn("Stanley run timed out before finishing the path");
+        std::cerr << "Stanley run timed out before finishing the path\n";
     }
 
     return 0;

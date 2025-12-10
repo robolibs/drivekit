@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <thread>
 
 namespace {
@@ -28,7 +27,7 @@ int main() {
     rec->log("", rerun::Clear::RECURSIVE);
     rec->log_with_static("", true, rerun::Clear::RECURSIVE);
 
-    spdlog::info("Visualization initialized for LQR demo");
+    std::cout << "Visualization initialized for LQR demo\n";
 
     drivekit::Tracker navigator(drivekit::TrackerType::LQR);
 
@@ -63,10 +62,10 @@ int main() {
     float last_print_time = 0.0f;
     float current_time = 0.0f;
 
-    spdlog::info("Starting LQR path tracking...");
-    spdlog::info("LQR uses optimal state feedback control (lateral error + heading error + derivatives)");
+    std::cout << "Starting LQR path tracking...\n";
+    std::cout << "LQR uses optimal state feedback control (lateral error + heading error + derivatives)\n";
 
-    spdlog::info("Starting main control loop...");
+    std::cout << "Starting main control loop...\n";
     for (int i = 0; i < 2000 && !navigator.is_path_completed(); ++i) {
         if (i % 100 == 0) {
             std::cout << "Iteration " << i << ", Robot at (" << robot_state.pose.point.x << ","
@@ -103,7 +102,7 @@ int main() {
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
-                spdlog::info("LQR: tracking path...");
+                std::cout << "LQR: tracking path...\n";
                 last_print_time = current_time;
             }
 
@@ -112,9 +111,9 @@ int main() {
     }
 
     if (navigator.is_path_completed()) {
-        spdlog::info("✓ LQR path tracking completed successfully!");
+        std::cout << "✓ LQR path tracking completed successfully!\n";
     } else {
-        spdlog::warn("✗ LQR run timed out before finishing the path");
+        std::cerr << "✗ LQR run timed out before finishing the path\n";
     }
 
     return 0;

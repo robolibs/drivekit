@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <thread>
 
 namespace {
@@ -28,7 +27,7 @@ int main() {
     rec->log("", rerun::Clear::RECURSIVE);
     rec->log_with_static("", true, rerun::Clear::RECURSIVE);
 
-    spdlog::info("Visualization initialized for SOC demo");
+    std::cout << "Visualization initialized for SOC demo\n";
 
     drivekit::Tracker navigator(drivekit::TrackerType::SOC);
 
@@ -56,9 +55,7 @@ int main() {
         soc_config.guide_iterations = 2;
         soc_config.guide_step_size = 0.2;
         soc_controller->set_soc_config(soc_config);
-        spdlog::info("SOC configuration set: horizon={}, dt={}, ref_vel={}, guide_samples={}, samples={}",
-                     soc_config.horizon_steps, soc_config.dt, soc_config.ref_velocity, soc_config.guide_samples,
-                     soc_config.num_samples);
+        std::cout << "SOC configuration set: horizon={}, dt={}, ref_vel={}, guide_samples={}, samples={}\n";
     }
 
     drivekit::RobotConstraints constraints;
@@ -89,11 +86,10 @@ int main() {
     float last_print_time = 0.0f;
     float current_time = 0.0f;
 
-    spdlog::info("Starting SOC path tracking...");
+    std::cout << "Starting SOC path tracking...\n";
     if (soc_controller) {
         auto cfg = soc_controller->get_soc_config();
-        spdlog::info("SOC: horizon={} steps, dt={} s, guide_samples={}, samples={}",
-                     cfg.horizon_steps, cfg.dt, cfg.guide_samples, cfg.num_samples);
+        std::cout << "SOC: horizon={} steps, dt={} s, guide_samples={}, samples={}\n";
     }
 
     int iteration = 0;
@@ -135,14 +131,13 @@ int main() {
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
-                spdlog::info("SOC: tracking path... (vel={:.2f} m/s, omega={:.2f} rad/s)", robot_state.velocity.linear,
-                             robot_state.velocity.angular);
+                std::cout << "SOC: tracking path... (vel={:.2f} m/s, omega={:.2f} rad/s)\n";
                 last_print_time = current_time;
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         } else {
-            spdlog::warn("SOC command invalid at iteration {}", iteration);
+            std::cerr << "SOC command invalid at iteration {}\n";
 
             // Slow down if we fail to get a valid command
             robot_state.velocity.linear *= 0.8;
@@ -156,9 +151,9 @@ int main() {
     }
 
     if (navigator.is_path_completed()) {
-        spdlog::info("✓ SOC path tracking completed successfully in {} iterations!", iteration);
+        std::cout << "✓ SOC path tracking completed successfully in {} iterations!\n";
     } else {
-        spdlog::warn("✗ SOC run timed out before finishing the path ({})", iteration);
+        std::cerr << "✗ SOC run timed out before finishing the path ({})\n";
     }
 
     return 0;

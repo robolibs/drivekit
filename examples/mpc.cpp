@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <thread>
 
 namespace {
@@ -28,7 +27,7 @@ int main() {
     rec->log("", rerun::Clear::RECURSIVE);
     rec->log_with_static("", true, rerun::Clear::RECURSIVE);
 
-    spdlog::info("Visualization initialized for MPC demo");
+    std::cout << "Visualization initialized for MPC demo\n";
 
     drivekit::Tracker navigator(drivekit::TrackerType::MPC);
 
@@ -49,8 +48,7 @@ int main() {
         mpc_config.max_solver_time = 0.5;           // IPOPT solver time limit
         mpc_config.print_level = 0;                 // Silent IPOPT output
         mpc_controller->set_mpc_config(mpc_config);
-        spdlog::info("MPC configuration set: horizon={}, dt={}, ref_vel={}", mpc_config.horizon_steps, mpc_config.dt,
-                     mpc_config.ref_velocity);
+        std::cout << "MPC configuration set: horizon={}, dt={}, ref_vel={}\n";
     }
 
     drivekit::RobotConstraints constraints;
@@ -63,9 +61,9 @@ int main() {
     navigator.init(constraints, rec);
 
     drivekit::PathGoal path_goal(build_s_shape_path(),
-                               0.5f, // tolerance
-                               1.0f, // max speed
-                               false);
+                                 0.5f, // tolerance
+                                 1.0f, // max speed
+                                 false);
 
     navigator.set_path(path_goal);
     navigator.smoothen(25.0f); // Smooth interpolation
@@ -81,13 +79,12 @@ int main() {
     float last_print_time = 0.0f;
     float current_time = 0.0f;
 
-    spdlog::info("Starting MPC path tracking...");
-    spdlog::info("MPC uses Model Predictive Control with IPOPT solver for optimal trajectory planning");
-    spdlog::info("Prediction horizon: {} steps, dt: {} seconds",
-                 mpc_controller ? mpc_controller->get_mpc_config().horizon_steps : 10,
-                 mpc_controller ? mpc_controller->get_mpc_config().dt : 0.1);
+    std::cout << "Starting MPC path tracking...\n";
+    std::cout << "MPC uses Model Predictive Control with IPOPT solver for optimal trajectory planning\n";
+    std::cout << "Prediction horizon: " << (mpc_controller ? mpc_controller->get_mpc_config().horizon_steps : 10)
+              << " steps, dt: " << (mpc_controller ? mpc_controller->get_mpc_config().dt : 0.1) << " seconds\n";
 
-    spdlog::info("Starting main control loop...");
+    std::cout << "Starting main control loop...\n";
     int solver_failures = 0;
 
     for (int i = 0; i < 2000 && !navigator.is_path_completed(); ++i) {
@@ -123,19 +120,18 @@ int main() {
 
             // Visualize
             drivekit::visualize::show_robot_state(rec, robot_state, "robot_mpc",
-                                                          rerun::Color(0, 191, 255)); // Deep sky blue color
+                                                  rerun::Color(0, 191, 255)); // Deep sky blue color
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
-                spdlog::info("MPC: tracking path... (vel={:.2f} m/s, omega={:.2f} rad/s)", robot_state.velocity.linear,
-                             robot_state.velocity.angular);
+                std::cout << "MPC: tracking path... (vel={:.2f} m/s, omega={:.2f} rad/s)\n";
                 last_print_time = current_time;
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         } else {
             solver_failures++;
-            spdlog::warn("MPC solver failed at iteration {}", i);
+            std::cerr << "MPC solver failed at iteration {}\n";
 
             // Continue with reduced velocity if solver fails
             robot_state.velocity.linear *= 0.8;
@@ -149,11 +145,11 @@ int main() {
     }
 
     if (navigator.is_path_completed()) {
-        spdlog::info("✓ MPC path tracking completed successfully!");
-        spdlog::info("  Total solver failures: {}", solver_failures);
+        std::cout << "✓ MPC path tracking completed successfully!\n";
+        std::cout << "  Total solver failures: {}\n";
     } else {
-        spdlog::warn("✗ MPC run timed out before finishing the path");
-        spdlog::warn("  Total solver failures: {}", solver_failures);
+        std::cerr << "✗ MPC run timed out before finishing the path\n";
+        std::cerr << "  Total solver failures: {}\n";
     }
 
     return 0;

@@ -3,7 +3,6 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <thread>
 #include <vector>
 
@@ -34,7 +33,7 @@ int main() {
     rec->log("", rerun::Clear::RECURSIVE);
     rec->log_with_static("", true, rerun::Clear::RECURSIVE);
 
-    spdlog::info("Visualization initialized for PID demo");
+    std::cout << "Visualization initialized for PID demo\n";
 
     drivekit::Tracker navigator(drivekit::TrackerType::PID);
 
@@ -98,7 +97,7 @@ int main() {
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
-                spdlog::info("PID controller driving toward goal...");
+                std::cout << "PID controller driving toward goal...\n";
                 last_print_time = current_time;
             }
 
@@ -114,9 +113,9 @@ int main() {
     }
 
     if (drivekit_index >= drivekits.size()) {
-        spdlog::info("PID drivekit path completed!");
+        std::cout << "PID drivekit path completed!\n";
     } else {
-        spdlog::warn("PID demo timed out before completing the drivekit path");
+        std::cerr << "PID demo timed out before completing the drivekit path\n";
     }
 
     return 0;
