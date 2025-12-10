@@ -1,2 +1,4 @@
 other
 xtra
+.xmake
+compile_commands.json
