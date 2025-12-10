@@ -39,6 +39,9 @@ namespace drivekit {
                 // Reference velocity along the path
                 double ref_velocity = 1.0; // m/s
 
+                // Turn-first behavior parameters (for differential/skid-steer robots)
+                double turn_first_threshold_deg = 15.0; // Heading error threshold to suppress velocity (degrees)
+
                 // Reserved for future parallelization
                 size_t num_threads = 4;
             };

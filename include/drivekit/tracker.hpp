@@ -79,6 +79,9 @@ namespace drivekit {
         // Current robot state (updated in tick)
         mutable RobotState current_state_;
 
+        // Track previous turn_first state to detect changes
+        mutable bool prev_turn_first_ = false;
+
         // Controller parameters
         struct ControllerParams {
             // PID parameters - increased gains for proper movement

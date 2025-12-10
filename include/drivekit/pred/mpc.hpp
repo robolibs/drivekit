@@ -42,6 +42,9 @@ namespace drivekit {
                 // Reference velocity
                 double ref_velocity = 1.0; // m/s
 
+                // Turn-first behavior parameters (for differential/skid-steer robots)
+                double turn_first_threshold_deg = 15.0; // Heading error threshold to suppress velocity (degrees)
+
                 // Solver settings (kept for future advanced optimizers; unused in
                 // the current lightweight implementation)
                 double max_solver_time = 0.5; // seconds (hint for future solvers)

@@ -349,6 +349,23 @@ namespace drivekit {
                 return cmd;
             }
 
+            // Compute path error first to check heading alignment
+            PathError error = calculate_path_error(current_state);
+
+            // Handle turn_first mode: adjust reference velocity for differential/skid-steer robots
+            MPCConfig working_config = mpc_config_;
+            if (current_state.turn_first && (constraints.steering_type == SteeringType::DIFFERENTIAL ||
+                                             constraints.steering_type == SteeringType::SKID_STEER)) {
+                const double threshold_rad = mpc_config_.turn_first_threshold_deg * M_PI / 180.0;
+
+                if (std::abs(error.epsi) > threshold_rad) {
+                    working_config.ref_velocity = 0.2;
+                    working_config.weight_vel = 50.0;
+                }
+            }
+
+            const auto &active_config = working_config;
+
             // Goal reached check
             if (is_goal_reached(current_state.pose, goal.target_pose)) {
                 cmd.valid = true;
@@ -360,8 +377,7 @@ namespace drivekit {
                 return cmd;
             }
 
-            // Path error and reference
-            PathError error = calculate_path_error(current_state);
+            // Reference trajectory (error already calculated above)
             ReferenceTrajectory ref_traj = calculate_reference_trajectory(error, current_state, constraints);
 
             // Solve MPC
@@ -411,7 +427,7 @@ namespace drivekit {
             const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
                                         constraints.steering_type == SteeringType::SKID_STEER);
 
-            double target_velocity = mpc_config_.ref_velocity + solution.acceleration * mpc_config_.dt;
+            double target_velocity = active_config.ref_velocity + solution.acceleration * active_config.dt;
             double min_vel = constraints.min_linear_velocity;
             if (!config_.allow_reverse) {
                 min_vel = 0.0;
@@ -447,6 +463,15 @@ namespace drivekit {
 
             cmd.valid = true;
             cmd.status_message = "MPC tracking";
+
+            // Apply turn_first velocity suppression if needed
+            if (current_state.turn_first && is_diff_drive) {
+                const double threshold_rad = mpc_config_.turn_first_threshold_deg * M_PI / 180.0;
+                if (std::abs(error.epsi) > threshold_rad) {
+                    cmd.linear_velocity = 0.0;
+                }
+            }
+
             return cmd;
         }
 
