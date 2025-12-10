@@ -33,6 +33,25 @@ namespace drivekit {
                 return cmd;
             }
 
+            // Compute path error first to check heading alignment
+            PathError error = calculate_path_error(current_state);
+
+            // Handle turn_first mode: adjust reference velocity and weight for velocity tracking
+            MPPIConfig working_config = mppi_config_;
+            if (current_state.turn_first && (constraints.steering_type == SteeringType::DIFFERENTIAL ||
+                                             constraints.steering_type == SteeringType::SKID_STEER)) {
+                const double sharp_turn_threshold_rad = 15.0 * M_PI / 180.0; // 15 degrees
+
+                // Only apply turn-first behavior if heading error is large
+                if (std::abs(error.epsi) > sharp_turn_threshold_rad) {
+                    working_config.ref_velocity = 0.2;
+                    working_config.weight_vel = 50.0;
+                }
+            }
+
+            // Use working_config instead of mppi_config_ for this control cycle
+            const auto &active_config = working_config;
+
             // Goal reached check (same semantics as MPCFollower)
             if (is_goal_reached(current_state.pose, goal.target_pose)) {
                 cmd.valid = true;
@@ -45,25 +64,24 @@ namespace drivekit {
             }
 
             // Ensure mean control sequences match current horizon length
-            if (mean_steering_.size() != mppi_config_.horizon_steps ||
-                mean_acceleration_.size() != mppi_config_.horizon_steps) {
-                mean_steering_.assign(mppi_config_.horizon_steps, 0.0);
-                mean_acceleration_.assign(mppi_config_.horizon_steps, 0.0);
+            if (mean_steering_.size() != active_config.horizon_steps ||
+                mean_acceleration_.size() != active_config.horizon_steps) {
+                mean_steering_.assign(active_config.horizon_steps, 0.0);
+                mean_acceleration_.assign(active_config.horizon_steps, 0.0);
             }
 
-            const size_t N = mppi_config_.horizon_steps;
-            const size_t K = mppi_config_.num_samples;
-            const double dt_internal = mppi_config_.dt;
+            const size_t N = active_config.horizon_steps;
+            const size_t K = active_config.num_samples;
+            const double dt_internal = active_config.dt;
             const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
                                         constraints.steering_type == SteeringType::SKID_STEER);
 
-            // Compute path error and reference trajectory (mirrors MPCFollower)
-            PathError error = calculate_path_error(current_state);
+            // Compute reference trajectory (error already calculated above)
             ReferenceTrajectory ref_traj = calculate_reference_trajectory(error, current_state, constraints);
 
             // Sampling distributions
-            std::normal_distribution<double> steering_noise_dist(0.0, mppi_config_.steering_noise);
-            std::normal_distribution<double> accel_noise_dist(0.0, mppi_config_.acceleration_noise);
+            std::normal_distribution<double> steering_noise_dist(0.0, active_config.steering_noise);
+            std::normal_distribution<double> accel_noise_dist(0.0, active_config.acceleration_noise);
 
             // Storage for costs and sampled noises
             std::vector<double> costs(K, 0.0);
@@ -153,11 +171,11 @@ namespace drivekit {
 
                     // Stage cost
                     double cost = 0.0;
-                    cost += mppi_config_.weight_cte * cte * cte;
-                    cost += mppi_config_.weight_epsi * epsi * epsi;
-                    cost += mppi_config_.weight_vel * vel_error * vel_error;
-                    cost += mppi_config_.weight_steering * delta_or_omega * delta_or_omega;
-                    cost += mppi_config_.weight_acceleration * a * a;
+                    cost += active_config.weight_cte * cte * cte;
+                    cost += active_config.weight_epsi * epsi * epsi;
+                    cost += active_config.weight_vel * vel_error * vel_error;
+                    cost += active_config.weight_steering * delta_or_omega * delta_or_omega;
+                    cost += active_config.weight_acceleration * a * a;
 
                     sample_cost += cost * dt_internal;
                 }
@@ -171,7 +189,7 @@ namespace drivekit {
             }
 
             // Compute importance weights
-            const double temperature = std::max(mppi_config_.temperature, 1e-6);
+            const double temperature = std::max(active_config.temperature, 1e-6);
             const double beta = 1.0 / temperature;
 
             double min_cost = *std::min_element(costs.begin(), costs.end());
@@ -249,7 +267,7 @@ namespace drivekit {
 
             // Convert steering/angular velocity and acceleration to command velocities
             // Use reference velocity as base, modulated by acceleration
-            double target_velocity = mppi_config_.ref_velocity + acceleration * dt_internal;
+            double target_velocity = active_config.ref_velocity + acceleration * dt_internal;
 
             // Clamp velocity respecting robot constraints
             double min_vel = constraints.min_linear_velocity;
@@ -287,6 +305,15 @@ namespace drivekit {
 
             cmd.valid = true;
             cmd.status_message = "MPPI tracking";
+
+            // Apply turn_first velocity suppression if needed
+            // Only suppress if heading error is large AND we're in turn_first mode
+            if (current_state.turn_first && is_diff_drive) {
+                const double threshold_rad = mppi_config_.turn_first_threshold_deg * M_PI / 180.0;
+                if (std::abs(error.epsi) > threshold_rad) {
+                    cmd.linear_velocity = 0.0;
+                }
+            }
 
             return cmd;
         }
