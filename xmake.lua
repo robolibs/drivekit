@@ -20,6 +20,34 @@ if home then
     add_linkdirs(path.join(home, ".local/lib"))
 end
 
+-- Add devbox/nix paths for system packages
+local cmake_prefix = os.getenv("CMAKE_PREFIX_PATH")
+if cmake_prefix then
+    add_includedirs(path.join(cmake_prefix, "include"))
+    add_linkdirs(path.join(cmake_prefix, "lib"))
+end
+
+local pkg_config = os.getenv("PKG_CONFIG_PATH")
+if pkg_config then
+    -- Split PKG_CONFIG_PATH by ':' and process each path
+    for _, pkgconfig_path in ipairs(pkg_config:split(':')) do
+        if os.isdir(pkgconfig_path) then
+            -- PKG_CONFIG_PATH typically points to .../lib/pkgconfig
+            -- We want to get the prefix (two levels up) to find include and lib
+            local lib_dir = path.directory(pkgconfig_path)  -- .../lib
+            local prefix_dir = path.directory(lib_dir)      -- .../
+            local include_dir = path.join(prefix_dir, "include")
+            
+            if os.isdir(lib_dir) then
+                add_linkdirs(lib_dir)
+            end
+            if os.isdir(include_dir) then
+                add_includedirs(include_dir)
+            end
+        end
+    end
+end
+
 -- Options
 option("examples")
     set_default(false)
