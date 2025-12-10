@@ -45,6 +45,7 @@ config:
 ifeq ($(BUILD_SYSTEM),xmake)
 	@xmake f --examples=y --tests=y -y
 	@xmake project -k compile_commands
+	@xmake project -k cmakelists
 else
 	@mkdir -p $(BUILD_DIR)
 	@cd $(BUILD_DIR) && if [ -f Makefile ]; then make clean; fi
@@ -56,6 +57,7 @@ reconfig:
 ifeq ($(BUILD_SYSTEM),xmake)
 	@xmake f --examples=y --tests=y -c -y
 	@xmake project -k compile_commands
+	@xmake project -k cmakelists
 else
 	@rm -rf $(BUILD_DIR)
 	@mkdir -p $(BUILD_DIR)

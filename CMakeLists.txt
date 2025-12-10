@@ -20,15 +20,10 @@ target_include_directories(carrot PRIVATE
 target_include_directories(carrot SYSTEM PRIVATE
     build/.packages/c/concord/latest/4e0143c97b65425b855ad5fd03038b6a/include
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/include
-    /nix/store/w3n97373d2qxiy6pda1xf73lnb5s0qfr-spdlog-1.15.2-dev/include
-    /nix/store/g7i4dsnb482z7crvykg8n6danr5w4bc4-fmt-10.2.1-dev/include
     /home/bresilla/.local/include
 )
 target_compile_definitions(carrot PRIVATE
     HAS_RERUN
-    SPDLOG_SHARED_LIB
-    SPDLOG_COMPILED_LIB
-    SPDLOG_FMT_EXTERNAL
 )
 target_compile_options(carrot PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-m64>
@@ -63,8 +58,6 @@ if(CURRENT_COMPILER_ID STREQUAL "MSVC")
 endif()
 target_link_libraries(carrot PRIVATE
     bonsai
-    spdlog
-    fmt
     rerun_sdk
     rerun_c__linux_x64
     arrow
@@ -74,13 +67,10 @@ target_link_libraries(carrot PRIVATE
 target_link_directories(carrot PRIVATE
     /home/bresilla/.local/lib
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/lib
-    /nix/store/jzfxsq2jz3qfq6gf94ha57y8jhb0nnyw-spdlog-1.15.2/lib
-    /nix/store/y9fxzkx4ldnr2b3k4n4hv7694hgz2hh1-fmt-10.2.1/lib
     build/linux/x86_64/release
 )
 target_link_options(carrot PRIVATE
     -m64
-    -pthread
 )
 # private sourcefiles from sourcebatch c++.build for target carrot
 target_sources(carrot PRIVATE 
@@ -199,15 +189,10 @@ target_include_directories(lqr PRIVATE
 target_include_directories(lqr SYSTEM PRIVATE
     build/.packages/c/concord/latest/4e0143c97b65425b855ad5fd03038b6a/include
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/include
-    /nix/store/w3n97373d2qxiy6pda1xf73lnb5s0qfr-spdlog-1.15.2-dev/include
-    /nix/store/g7i4dsnb482z7crvykg8n6danr5w4bc4-fmt-10.2.1-dev/include
     /home/bresilla/.local/include
 )
 target_compile_definitions(lqr PRIVATE
     HAS_RERUN
-    SPDLOG_SHARED_LIB
-    SPDLOG_COMPILED_LIB
-    SPDLOG_FMT_EXTERNAL
 )
 target_compile_options(lqr PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-m64>
@@ -242,8 +227,6 @@ if(CURRENT_COMPILER_ID STREQUAL "MSVC")
 endif()
 target_link_libraries(lqr PRIVATE
     bonsai
-    spdlog
-    fmt
     rerun_sdk
     rerun_c__linux_x64
     arrow
@@ -253,13 +236,10 @@ target_link_libraries(lqr PRIVATE
 target_link_directories(lqr PRIVATE
     /home/bresilla/.local/lib
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/lib
-    /nix/store/jzfxsq2jz3qfq6gf94ha57y8jhb0nnyw-spdlog-1.15.2/lib
-    /nix/store/y9fxzkx4ldnr2b3k4n4hv7694hgz2hh1-fmt-10.2.1/lib
     build/linux/x86_64/release
 )
 target_link_options(lqr PRIVATE
     -m64
-    -pthread
 )
 # private sourcefiles from sourcebatch c++.build for target lqr
 target_sources(lqr PRIVATE 
@@ -278,15 +258,10 @@ target_include_directories(mpc PRIVATE
 target_include_directories(mpc SYSTEM PRIVATE
     build/.packages/c/concord/latest/4e0143c97b65425b855ad5fd03038b6a/include
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/include
-    /nix/store/w3n97373d2qxiy6pda1xf73lnb5s0qfr-spdlog-1.15.2-dev/include
-    /nix/store/g7i4dsnb482z7crvykg8n6danr5w4bc4-fmt-10.2.1-dev/include
     /home/bresilla/.local/include
 )
 target_compile_definitions(mpc PRIVATE
     HAS_RERUN
-    SPDLOG_SHARED_LIB
-    SPDLOG_COMPILED_LIB
-    SPDLOG_FMT_EXTERNAL
 )
 target_compile_options(mpc PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-m64>
@@ -321,8 +296,6 @@ if(CURRENT_COMPILER_ID STREQUAL "MSVC")
 endif()
 target_link_libraries(mpc PRIVATE
     bonsai
-    spdlog
-    fmt
     rerun_sdk
     rerun_c__linux_x64
     arrow
@@ -332,13 +305,10 @@ target_link_libraries(mpc PRIVATE
 target_link_directories(mpc PRIVATE
     /home/bresilla/.local/lib
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/lib
-    /nix/store/jzfxsq2jz3qfq6gf94ha57y8jhb0nnyw-spdlog-1.15.2/lib
-    /nix/store/y9fxzkx4ldnr2b3k4n4hv7694hgz2hh1-fmt-10.2.1/lib
     build/linux/x86_64/release
 )
 target_link_options(mpc PRIVATE
     -m64
-    -pthread
 )
 # private sourcefiles from sourcebatch c++.build for target mpc
 target_sources(mpc PRIVATE 
@@ -357,15 +327,10 @@ target_include_directories(mppi PRIVATE
 target_include_directories(mppi SYSTEM PRIVATE
     build/.packages/c/concord/latest/4e0143c97b65425b855ad5fd03038b6a/include
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/include
-    /nix/store/w3n97373d2qxiy6pda1xf73lnb5s0qfr-spdlog-1.15.2-dev/include
-    /nix/store/g7i4dsnb482z7crvykg8n6danr5w4bc4-fmt-10.2.1-dev/include
     /home/bresilla/.local/include
 )
 target_compile_definitions(mppi PRIVATE
     HAS_RERUN
-    SPDLOG_SHARED_LIB
-    SPDLOG_COMPILED_LIB
-    SPDLOG_FMT_EXTERNAL
 )
 target_compile_options(mppi PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-m64>
@@ -400,8 +365,6 @@ if(CURRENT_COMPILER_ID STREQUAL "MSVC")
 endif()
 target_link_libraries(mppi PRIVATE
     bonsai
-    spdlog
-    fmt
     rerun_sdk
     rerun_c__linux_x64
     arrow
@@ -411,13 +374,10 @@ target_link_libraries(mppi PRIVATE
 target_link_directories(mppi PRIVATE
     /home/bresilla/.local/lib
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/lib
-    /nix/store/jzfxsq2jz3qfq6gf94ha57y8jhb0nnyw-spdlog-1.15.2/lib
-    /nix/store/y9fxzkx4ldnr2b3k4n4hv7694hgz2hh1-fmt-10.2.1/lib
     build/linux/x86_64/release
 )
 target_link_options(mppi PRIVATE
     -m64
-    -pthread
 )
 # private sourcefiles from sourcebatch c++.build for target mppi
 target_sources(mppi PRIVATE 
@@ -436,15 +396,10 @@ target_include_directories(pid PRIVATE
 target_include_directories(pid SYSTEM PRIVATE
     build/.packages/c/concord/latest/4e0143c97b65425b855ad5fd03038b6a/include
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/include
-    /nix/store/w3n97373d2qxiy6pda1xf73lnb5s0qfr-spdlog-1.15.2-dev/include
-    /nix/store/g7i4dsnb482z7crvykg8n6danr5w4bc4-fmt-10.2.1-dev/include
     /home/bresilla/.local/include
 )
 target_compile_definitions(pid PRIVATE
     HAS_RERUN
-    SPDLOG_SHARED_LIB
-    SPDLOG_COMPILED_LIB
-    SPDLOG_FMT_EXTERNAL
 )
 target_compile_options(pid PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-m64>
@@ -479,8 +434,6 @@ if(CURRENT_COMPILER_ID STREQUAL "MSVC")
 endif()
 target_link_libraries(pid PRIVATE
     bonsai
-    spdlog
-    fmt
     rerun_sdk
     rerun_c__linux_x64
     arrow
@@ -490,13 +443,10 @@ target_link_libraries(pid PRIVATE
 target_link_directories(pid PRIVATE
     /home/bresilla/.local/lib
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/lib
-    /nix/store/jzfxsq2jz3qfq6gf94ha57y8jhb0nnyw-spdlog-1.15.2/lib
-    /nix/store/y9fxzkx4ldnr2b3k4n4hv7694hgz2hh1-fmt-10.2.1/lib
     build/linux/x86_64/release
 )
 target_link_options(pid PRIVATE
     -m64
-    -pthread
 )
 # private sourcefiles from sourcebatch c++.build for target pid
 target_sources(pid PRIVATE 
@@ -515,15 +465,10 @@ target_include_directories(pure PRIVATE
 target_include_directories(pure SYSTEM PRIVATE
     build/.packages/c/concord/latest/4e0143c97b65425b855ad5fd03038b6a/include
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/include
-    /nix/store/w3n97373d2qxiy6pda1xf73lnb5s0qfr-spdlog-1.15.2-dev/include
-    /nix/store/g7i4dsnb482z7crvykg8n6danr5w4bc4-fmt-10.2.1-dev/include
     /home/bresilla/.local/include
 )
 target_compile_definitions(pure PRIVATE
     HAS_RERUN
-    SPDLOG_SHARED_LIB
-    SPDLOG_COMPILED_LIB
-    SPDLOG_FMT_EXTERNAL
 )
 target_compile_options(pure PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-m64>
@@ -558,8 +503,6 @@ if(CURRENT_COMPILER_ID STREQUAL "MSVC")
 endif()
 target_link_libraries(pure PRIVATE
     bonsai
-    spdlog
-    fmt
     rerun_sdk
     rerun_c__linux_x64
     arrow
@@ -569,13 +512,10 @@ target_link_libraries(pure PRIVATE
 target_link_directories(pure PRIVATE
     /home/bresilla/.local/lib
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/lib
-    /nix/store/jzfxsq2jz3qfq6gf94ha57y8jhb0nnyw-spdlog-1.15.2/lib
-    /nix/store/y9fxzkx4ldnr2b3k4n4hv7694hgz2hh1-fmt-10.2.1/lib
     build/linux/x86_64/release
 )
 target_link_options(pure PRIVATE
     -m64
-    -pthread
 )
 # private sourcefiles from sourcebatch c++.build for target pure
 target_sources(pure PRIVATE 
@@ -594,15 +534,10 @@ target_include_directories(soc PRIVATE
 target_include_directories(soc SYSTEM PRIVATE
     build/.packages/c/concord/latest/4e0143c97b65425b855ad5fd03038b6a/include
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/include
-    /nix/store/w3n97373d2qxiy6pda1xf73lnb5s0qfr-spdlog-1.15.2-dev/include
-    /nix/store/g7i4dsnb482z7crvykg8n6danr5w4bc4-fmt-10.2.1-dev/include
     /home/bresilla/.local/include
 )
 target_compile_definitions(soc PRIVATE
     HAS_RERUN
-    SPDLOG_SHARED_LIB
-    SPDLOG_COMPILED_LIB
-    SPDLOG_FMT_EXTERNAL
 )
 target_compile_options(soc PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-m64>
@@ -637,8 +572,6 @@ if(CURRENT_COMPILER_ID STREQUAL "MSVC")
 endif()
 target_link_libraries(soc PRIVATE
     bonsai
-    spdlog
-    fmt
     rerun_sdk
     rerun_c__linux_x64
     arrow
@@ -648,13 +581,10 @@ target_link_libraries(soc PRIVATE
 target_link_directories(soc PRIVATE
     /home/bresilla/.local/lib
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/lib
-    /nix/store/jzfxsq2jz3qfq6gf94ha57y8jhb0nnyw-spdlog-1.15.2/lib
-    /nix/store/y9fxzkx4ldnr2b3k4n4hv7694hgz2hh1-fmt-10.2.1/lib
     build/linux/x86_64/release
 )
 target_link_options(soc PRIVATE
     -m64
-    -pthread
 )
 # private sourcefiles from sourcebatch c++.build for target soc
 target_sources(soc PRIVATE 
@@ -673,15 +603,10 @@ target_include_directories(stan PRIVATE
 target_include_directories(stan SYSTEM PRIVATE
     build/.packages/c/concord/latest/4e0143c97b65425b855ad5fd03038b6a/include
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/include
-    /nix/store/w3n97373d2qxiy6pda1xf73lnb5s0qfr-spdlog-1.15.2-dev/include
-    /nix/store/g7i4dsnb482z7crvykg8n6danr5w4bc4-fmt-10.2.1-dev/include
     /home/bresilla/.local/include
 )
 target_compile_definitions(stan PRIVATE
     HAS_RERUN
-    SPDLOG_SHARED_LIB
-    SPDLOG_COMPILED_LIB
-    SPDLOG_FMT_EXTERNAL
 )
 target_compile_options(stan PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-m64>
@@ -716,8 +641,6 @@ if(CURRENT_COMPILER_ID STREQUAL "MSVC")
 endif()
 target_link_libraries(stan PRIVATE
     bonsai
-    spdlog
-    fmt
     rerun_sdk
     rerun_c__linux_x64
     arrow
@@ -727,13 +650,10 @@ target_link_libraries(stan PRIVATE
 target_link_directories(stan PRIVATE
     /home/bresilla/.local/lib
     build/.packages/b/bonsai/latest/4e0143c97b65425b855ad5fd03038b6a/lib
-    /nix/store/jzfxsq2jz3qfq6gf94ha57y8jhb0nnyw-spdlog-1.15.2/lib
-    /nix/store/y9fxzkx4ldnr2b3k4n4hv7694hgz2hh1-fmt-10.2.1/lib
     build/linux/x86_64/release
 )
 target_link_options(stan PRIVATE
     -m64
-    -pthread
 )
 # private sourcefiles from sourcebatch c++.build for target stan
 target_sources(stan PRIVATE 

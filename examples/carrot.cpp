@@ -3,7 +3,6 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <thread>
 #include <vector>
 
@@ -35,7 +34,7 @@ int main() {
     rec->log("", rerun::Clear::RECURSIVE);
     rec->log_with_static("", true, rerun::Clear::RECURSIVE);
 
-    spdlog::info("Visualization initialized for Carrot demo");
+    std::cout << "Visualization initialized for Carrot demo\n";
 
     drivekit::Tracker navigator(drivekit::TrackerType::CARROT);
 
@@ -99,7 +98,7 @@ int main() {
             navigator.tock();
 
             if (current_time - last_print_time >= print_interval) {
-                spdlog::info("Carrot follower chasing goal...");
+                std::cout << "Carrot follower chasing goal...\n";
                 last_print_time = current_time;
             }
 
@@ -115,9 +114,9 @@ int main() {
     }
 
     if (drivekit_index >= drivekits.size()) {
-        spdlog::info("Carrot drivekit path completed!");
+        std::cout << "Carrot drivekit path completed!\n";
     } else {
-        spdlog::warn("Carrot demo timed out before reaching the final drivekit");
+        std::cerr << "Carrot demo timed out before reaching the final drivekit\n";
     }
 
     return 0;
