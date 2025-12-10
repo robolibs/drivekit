@@ -1,8 +1,9 @@
 SHELL := /bin/bash
 
-# Detect build system: prefer xmake if available, fallback to cmake
+# Detect build system: prefer xmake if available (binary + xmake.lua), fallback to cmake
 HAS_XMAKE := $(shell command -v xmake 2>/dev/null)
-ifneq ($(HAS_XMAKE),)
+HAS_XMAKE_LUA := $(shell [ -f xmake.lua ] && echo "yes" || echo "")
+ifeq ($(and $(HAS_XMAKE),$(HAS_XMAKE_LUA)),yes)
     BUILD_SYSTEM := xmake
     PROJECT_NAME := $(shell grep 'set_project' xmake.lua | sed 's/set_project("\(.*\)")/\1/')
 else
@@ -54,6 +55,7 @@ endif
 
 reconfig:
 ifeq ($(BUILD_SYSTEM),xmake)
+	@rm -rf .xmake $(BUILD_DIR)
 	@xmake f --examples=y --tests=y -c -y
 	@xmake project -k compile_commands
 else
