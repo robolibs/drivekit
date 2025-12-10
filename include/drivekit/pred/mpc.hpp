@@ -43,7 +43,8 @@ namespace drivekit {
                 double ref_velocity = 1.0; // m/s
 
                 // Turn-first behavior parameters (for differential/skid-steer robots)
-                double turn_first_threshold_deg = 15.0; // Heading error threshold to suppress velocity (degrees)
+                double turn_first_activation_deg = 60.0; // Activate turn_first only if heading error > this (degrees)
+                double turn_first_release_deg = 15.0;    // Once turning, release when heading error < this (degrees)
 
                 // Solver settings (kept for future advanced optimizers; unused in
                 // the current lightweight implementation)
@@ -90,6 +91,9 @@ namespace drivekit {
 
             // Predicted trajectory (for visualization/debugging)
             std::vector<Point> predicted_trajectory_;
+
+            // Turn-first state tracking (for hysteresis)
+            bool is_turning_in_place_ = false;
 
             // Helper methods
             PathError calculate_path_error(const RobotState &current_state);
