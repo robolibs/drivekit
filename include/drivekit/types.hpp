@@ -31,10 +31,11 @@ namespace drivekit {
 
     // Robot state
     struct RobotState {
-        Pose pose;              // Primary robot pose (e.g. tractor)
-        Velocity velocity;      // Primary robot velocity
-        double timestamp = 0.0; // Time in seconds
-        bool allow_reverse = false;
+        Pose pose;                  // Primary robot pose (e.g. tractor)
+        Velocity velocity;          // Primary robot velocity
+        double timestamp = 0.0;     // Time in seconds
+        bool allow_reverse = false; // Allow reverse motion this tick
+        bool turn_first = false;    // For diff/skid: rotate in place before translating
 
         // Optional articulated follower (e.g. trailer)
         bool has_trailer = false;

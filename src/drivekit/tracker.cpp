@@ -126,8 +126,49 @@ namespace drivekit {
 
         // Compute control command
         if (controller) {
+            // Update controller configuration with runtime reverse permission
+            auto cfg = controller->get_config();
+            cfg.allow_reverse = current_state.allow_reverse;
+            controller->set_config(cfg);
+
             // Use simple controller, pass dynamic constraints if available
             cmd = controller->compute_control(current_state, goal, constraints_, dt, dynamic_constraints);
+
+            // For differential/skid-steer: optional "turn-then-go" behaviour driven by RobotState.turn_first.
+            // When enabled and heading error to the current target is large, we suppress translation so the
+            // robot rotates in place first.
+            const bool is_diff_like = (constraints_.steering_type == SteeringType::DIFFERENTIAL ||
+                                       constraints_.steering_type == SteeringType::SKID_STEER);
+            if (cmd.valid && is_diff_like && current_state.turn_first) {
+                bool have_target = false;
+                concord::Point target{};
+
+                if (current_goal.has_value()) {
+                    target = current_goal->target;
+                    have_target = true;
+                } else if (current_path.has_value() && !current_path->drivekits.empty()) {
+                    size_t idx = current_drivekit_index;
+                    if (idx >= current_path->drivekits.size()) {
+                        idx = current_path->drivekits.size() - 1;
+                    }
+                    target = current_path->drivekits[idx];
+                    have_target = true;
+                }
+
+                if (have_target) {
+                    double dx = static_cast<double>(target.x) - current_state.pose.point.x;
+                    double dy = static_cast<double>(target.y) - current_state.pose.point.y;
+                    double desired_heading = std::atan2(dy, dx);
+                    double heading_error = std::atan2(std::sin(desired_heading - current_state.pose.angle.yaw),
+                                                      std::cos(desired_heading - current_state.pose.angle.yaw));
+
+                    const double sharp_turn_rad = static_cast<double>(params.sharp_turn_threshold) * M_PI / 180.0;
+
+                    if (std::abs(heading_error) > sharp_turn_rad) {
+                        cmd.linear_velocity = 0.0;
+                    }
+                }
+            }
 
             // For Ackermann steering, enforce minimum velocity when angular velocity is non-zero
             // Ackermann vehicles cannot turn in place - they need forward/backward motion
