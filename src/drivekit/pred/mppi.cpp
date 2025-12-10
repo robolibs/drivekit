@@ -12,7 +12,7 @@ namespace drivekit {
         MPPIFollower::MPPIFollower() : MPPIFollower(MPPIConfig{}) {}
 
         MPPIFollower::MPPIFollower(const MPPIConfig &mppi_config)
-            : mppi_config_(mppi_config), rng_(std::random_device{}()) {
+            : mppi_config_(mppi_config), rng_(std::random_device{}()), is_turning_in_place_(false) {
             // Initialize mean control sequences
             mean_steering_.assign(mppi_config_.horizon_steps, 0.0);
             mean_acceleration_.assign(mppi_config_.horizon_steps, 0.0);
@@ -37,16 +37,37 @@ namespace drivekit {
             PathError error = calculate_path_error(current_state);
 
             // Handle turn_first mode: adjust reference velocity and weight for velocity tracking
+            // Using hysteresis to prevent oscillation between turning and moving
             MPPIConfig working_config = mppi_config_;
-            if (current_state.turn_first && (constraints.steering_type == SteeringType::DIFFERENTIAL ||
-                                             constraints.steering_type == SteeringType::SKID_STEER)) {
-                const double sharp_turn_threshold_rad = 15.0 * M_PI / 180.0; // 15 degrees
+            bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
+                                  constraints.steering_type == SteeringType::SKID_STEER);
 
-                // Only apply turn-first behavior if heading error is large
-                if (std::abs(error.epsi) > sharp_turn_threshold_rad) {
+            if (current_state.turn_first && is_diff_drive) {
+                const double activation_threshold_rad = mppi_config_.turn_first_activation_deg * M_PI / 180.0;
+                const double release_threshold_rad = mppi_config_.turn_first_release_deg * M_PI / 180.0;
+                const double heading_error_abs = std::abs(error.epsi);
+
+                // State machine with hysteresis
+                if (!is_turning_in_place_) {
+                    // Not currently turning - check if we should start
+                    if (heading_error_abs > activation_threshold_rad) {
+                        is_turning_in_place_ = true;
+                    }
+                } else {
+                    // Currently turning - check if we should stop
+                    if (heading_error_abs < release_threshold_rad) {
+                        is_turning_in_place_ = false;
+                    }
+                }
+
+                // Apply turn-first behavior if in turning state
+                if (is_turning_in_place_) {
                     working_config.ref_velocity = 0.2;
                     working_config.weight_vel = 50.0;
                 }
+            } else {
+                // Reset state when turn_first is disabled
+                is_turning_in_place_ = false;
             }
 
             // Use working_config instead of mppi_config_ for this control cycle
@@ -73,8 +94,6 @@ namespace drivekit {
             const size_t N = active_config.horizon_steps;
             const size_t K = active_config.num_samples;
             const double dt_internal = active_config.dt;
-            const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
-                                        constraints.steering_type == SteeringType::SKID_STEER);
 
             // Compute reference trajectory (error already calculated above)
             ReferenceTrajectory ref_traj = calculate_reference_trajectory(error, current_state, constraints);
@@ -307,12 +326,9 @@ namespace drivekit {
             cmd.status_message = "MPPI tracking";
 
             // Apply turn_first velocity suppression if needed
-            // Only suppress if heading error is large AND we're in turn_first mode
-            if (current_state.turn_first && is_diff_drive) {
-                const double threshold_rad = mppi_config_.turn_first_threshold_deg * M_PI / 180.0;
-                if (std::abs(error.epsi) > threshold_rad) {
-                    cmd.linear_velocity = 0.0;
-                }
+            // Use the hysteresis state to determine if we should suppress velocity
+            if (is_turning_in_place_) {
+                cmd.linear_velocity = 0.0;
             }
 
             return cmd;

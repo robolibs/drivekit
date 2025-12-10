@@ -331,7 +331,7 @@ namespace drivekit {
 
         MPCFollower::MPCFollower() : MPCFollower(MPCConfig{}) {}
 
-        MPCFollower::MPCFollower(const MPCConfig &mpc_config) : mpc_config_(mpc_config) {
+        MPCFollower::MPCFollower(const MPCConfig &mpc_config) : mpc_config_(mpc_config), is_turning_in_place_(false) {
             previous_steering_.resize(mpc_config_.horizon_steps, 0.0);
             previous_acceleration_.resize(mpc_config_.horizon_steps, 0.0);
         }
@@ -353,15 +353,37 @@ namespace drivekit {
             PathError error = calculate_path_error(current_state);
 
             // Handle turn_first mode: adjust reference velocity for differential/skid-steer robots
+            // Using hysteresis to prevent oscillation between turning and moving
             MPCConfig working_config = mpc_config_;
-            if (current_state.turn_first && (constraints.steering_type == SteeringType::DIFFERENTIAL ||
-                                             constraints.steering_type == SteeringType::SKID_STEER)) {
-                const double threshold_rad = mpc_config_.turn_first_threshold_deg * M_PI / 180.0;
+            bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
+                                  constraints.steering_type == SteeringType::SKID_STEER);
 
-                if (std::abs(error.epsi) > threshold_rad) {
+            if (current_state.turn_first && is_diff_drive) {
+                const double activation_threshold_rad = mpc_config_.turn_first_activation_deg * M_PI / 180.0;
+                const double release_threshold_rad = mpc_config_.turn_first_release_deg * M_PI / 180.0;
+                const double heading_error_abs = std::abs(error.epsi);
+
+                // State machine with hysteresis
+                if (!is_turning_in_place_) {
+                    // Not currently turning - check if we should start
+                    if (heading_error_abs > activation_threshold_rad) {
+                        is_turning_in_place_ = true;
+                    }
+                } else {
+                    // Currently turning - check if we should stop
+                    if (heading_error_abs < release_threshold_rad) {
+                        is_turning_in_place_ = false;
+                    }
+                }
+
+                // Apply turn-first behavior if in turning state
+                if (is_turning_in_place_) {
                     working_config.ref_velocity = 0.2;
                     working_config.weight_vel = 50.0;
                 }
+            } else {
+                // Reset state when turn_first is disabled
+                is_turning_in_place_ = false;
             }
 
             const auto &active_config = working_config;
@@ -424,9 +446,6 @@ namespace drivekit {
             status_.mode = "mpc_tracking";
 
             // Convert steering/angular velocity and acceleration to velocities
-            const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
-                                        constraints.steering_type == SteeringType::SKID_STEER);
-
             double target_velocity = active_config.ref_velocity + solution.acceleration * active_config.dt;
             double min_vel = constraints.min_linear_velocity;
             if (!config_.allow_reverse) {
@@ -465,11 +484,9 @@ namespace drivekit {
             cmd.status_message = "MPC tracking";
 
             // Apply turn_first velocity suppression if needed
-            if (current_state.turn_first && is_diff_drive) {
-                const double threshold_rad = mpc_config_.turn_first_threshold_deg * M_PI / 180.0;
-                if (std::abs(error.epsi) > threshold_rad) {
-                    cmd.linear_velocity = 0.0;
-                }
+            // Use the hysteresis state to determine if we should suppress velocity
+            if (is_turning_in_place_) {
+                cmd.linear_velocity = 0.0;
             }
 
             return cmd;
