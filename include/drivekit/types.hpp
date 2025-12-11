@@ -36,6 +36,7 @@ namespace drivekit {
         double timestamp = 0.0;     // Time in seconds
         bool allow_reverse = false; // Allow reverse motion this tick
         bool turn_first = false;    // For diff/skid: rotate in place before translating
+        bool allow_move = true;     // Allow movement (false = send zero velocity)
 
         // Optional articulated follower (e.g. trailer)
         bool has_trailer = false;
@@ -83,9 +84,27 @@ namespace drivekit {
         double max_speed = 0.0;      // Maximum speed in zone (0 = forbidden/no-go zone)
     };
 
+    // Obstacle representation with uncertainty prediction
+    struct Obstacle {
+        size_t id = 0;
+        double radius = 0.3; // Obstacle radius (m)
+
+        // Gaussian mode for trajectory prediction
+        struct GaussianMode {
+            double weight = 1.0;        // Mode probability (sum to 1.0 across modes)
+            std::vector<double> mean_x; // Mean x position per timestep
+            std::vector<double> mean_y; // Mean y position per timestep
+            std::vector<double> std_x;  // Standard deviation x per timestep
+            std::vector<double> std_y;  // Standard deviation y per timestep
+        };
+
+        std::vector<GaussianMode> modes; // Multiple modes for multi-modal predictions
+    };
+
     // World constraints (can change at every tick - obstacles, zones, etc.)
     struct WorldConstraints {
-        std::vector<Zone> zones; // Dynamic zones (no-go areas, speed limits, etc.)
+        std::vector<Zone> zones;         // Dynamic zones (no-go areas, speed limits, etc.)
+        std::vector<Obstacle> obstacles; // Dynamic obstacles with Gaussian predictions
     };
 
     // Goal specification for tracking

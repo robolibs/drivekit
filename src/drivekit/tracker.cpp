@@ -87,6 +87,15 @@ namespace drivekit {
         VelocityCommand cmd;
         cmd.valid = false;
 
+        // If movement is not allowed, return zero velocity command
+        if (!current_state.allow_move) {
+            cmd.valid = true;
+            cmd.linear_velocity = 0.0;
+            cmd.angular_velocity = 0.0;
+            cmd.status_message = "Movement disabled";
+            return cmd;
+        }
+
         // Check if we have a valid target
         if (!current_goal.has_value() && !current_path.has_value()) {
             return cmd;

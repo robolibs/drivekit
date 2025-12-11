@@ -7,6 +7,7 @@
 #include "drivekit/path/stanley.hpp"
 #include "drivekit/point/carrot.hpp"
 #include "drivekit/point/pid.hpp"
+#include "drivekit/pred/mca.hpp"
 #include "drivekit/pred/mpc.hpp"
 #include "drivekit/pred/mppi.hpp"
 #include "drivekit/pred/soc.hpp"
