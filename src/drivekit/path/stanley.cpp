@@ -41,6 +41,30 @@ namespace drivekit {
             // Calculate heading error
             double heading_error = normalize_angle(path_heading - current_state.pose.angle.yaw);
 
+            // Check turn_first mode for diff/skid drive: rotate in place until aligned
+            if (is_diff_drive && current_state.turn_first && std::abs(heading_error) > config_.angular_tolerance) {
+                // Turn in place - zero linear velocity until aligned
+                double kp_angular = 2.0;
+                double angular_control = kp_angular * heading_error;
+                angular_control =
+                    std::clamp(angular_control, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+
+                cmd.linear_velocity = 0.0;
+                cmd.angular_velocity = angular_control;
+
+                // Update status
+                status_.distance_to_goal = current_state.pose.point.distance_to(goal.target_pose.point);
+                status_.cross_track_error = cross_track_error;
+                status_.heading_error = heading_error;
+                status_.goal_reached = false;
+                status_.mode = "turning";
+
+                cmd.valid = true;
+                cmd.status_message = "Turning to align";
+
+                return cmd;
+            }
+
             // Determine if we should move forward or backward based on path direction
             double velocity_direction = 1.0;
             if (config_.allow_reverse) {

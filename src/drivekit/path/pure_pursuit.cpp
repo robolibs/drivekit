@@ -58,6 +58,10 @@ namespace drivekit {
                 return cmd;
             }
 
+            // Determine if this is a diff/skid drive that supports turn_first
+            const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
+                                        constraints.steering_type == SteeringType::SKID_STEER);
+
             // Calculate angle to target from rear axle (alpha)
             double dx = target_point.x - rear_x;
             double dy = target_point.y - rear_y;
@@ -71,6 +75,29 @@ namespace drivekit {
             status_.cross_track_error = std::abs(std::sin(alpha) * std::hypot(dx, dy));
             status_.goal_reached = false;
             status_.mode = "pure_pursuit";
+
+            // Check turn_first mode for diff/skid drive: rotate in place until aligned
+            if (is_diff_drive && current_state.turn_first && std::abs(alpha) > config_.angular_tolerance) {
+                // Turn in place - zero linear velocity until aligned
+                double kp_angular = 2.5;
+                double angular_control = kp_angular * alpha;
+                angular_control =
+                    std::clamp(angular_control, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+
+                if (config_.output_units == OutputUnits::NORMALIZED) {
+                    cmd.linear_velocity = 0.0;
+                    cmd.angular_velocity = angular_control / constraints.max_angular_velocity;
+                } else {
+                    cmd.linear_velocity = 0.0;
+                    cmd.angular_velocity = angular_control;
+                }
+
+                cmd.valid = true;
+                cmd.status_message = "Turning to align";
+                status_.mode = "turning";
+
+                return cmd;
+            }
 
             // Calculate desired angular velocity
             double angular_physical;
