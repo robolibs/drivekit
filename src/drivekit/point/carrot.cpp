@@ -19,6 +19,10 @@ namespace drivekit {
                 return cmd;
             }
 
+            // Determine if this is a diff/skid drive that supports turn_first
+            const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
+                                        constraints.steering_type == SteeringType::SKID_STEER);
+
             // Calculate distance and heading to goal
             double dx = goal.target_pose.point.x - current_state.pose.point.x;
             double dy = goal.target_pose.point.y - current_state.pose.point.y;
@@ -32,6 +36,20 @@ namespace drivekit {
 
             // Simple proportional control
             double angular_control = config_.kp_angular * heading_error;
+
+            // Check turn_first mode for diff/skid drive: rotate in place until aligned
+            if (is_diff_drive && current_state.turn_first && std::abs(heading_error) > config_.angular_tolerance) {
+                // Turn in place - zero linear velocity until aligned
+                cmd.linear_velocity = 0.0;
+                cmd.angular_velocity =
+                    std::clamp(angular_control, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+
+                cmd.valid = true;
+                cmd.status_message = "Turning to align";
+                status_.mode = "turning";
+
+                return cmd;
+            }
 
             // Reduce speed when turning sharply
             double turn_reduction = 1.0 - std::min(std::abs(heading_error) / M_PI, 0.8);

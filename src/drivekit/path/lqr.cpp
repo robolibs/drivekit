@@ -265,6 +265,36 @@ namespace drivekit {
             const bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
                                         constraints.steering_type == SteeringType::SKID_STEER);
 
+            // Check turn_first mode for diff/skid drive: rotate in place until aligned
+            if (is_diff_drive && current_state.turn_first &&
+                std::abs(error.heading_error) > config_.angular_tolerance) {
+                // Turn in place - zero linear velocity until aligned
+                double kp_angular = 2.0;
+                double angular_control = kp_angular * error.heading_error;
+                angular_control =
+                    std::clamp(angular_control, -constraints.max_angular_velocity, constraints.max_angular_velocity);
+
+                // Update status
+                status_.distance_to_goal = current_state.pose.point.distance_to(goal.target_pose.point);
+                status_.cross_track_error = std::abs(error.lateral_error);
+                status_.heading_error = std::abs(error.heading_error);
+                status_.goal_reached = false;
+                status_.mode = "turning";
+
+                if (config_.output_units == OutputUnits::NORMALIZED) {
+                    cmd.linear_velocity = 0.0;
+                    cmd.angular_velocity = angular_control / constraints.max_angular_velocity;
+                } else {
+                    cmd.linear_velocity = 0.0;
+                    cmd.angular_velocity = angular_control;
+                }
+
+                cmd.valid = true;
+                cmd.status_message = "Turning to align";
+
+                return cmd;
+            }
+
             // Get current velocity
             double velocity = current_state.velocity.linear;
             if (std::abs(velocity) < 0.01) {
