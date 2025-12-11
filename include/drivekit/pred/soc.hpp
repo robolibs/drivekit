@@ -5,11 +5,9 @@
 namespace drivekit {
     namespace pred {
 
-        // SOC (Stochastic Optimal Control) controller.
-        // For now this is a thin wrapper around MPPIFollower with its
-        // own configuration struct and type name, so behavior matches
-        // the existing MPPI implementation while exposing a separate
-        // controller type for experimentation.
+        // SOC (Stochastic Optimal Control) controller - SVG-MPPI
+        // Stein Variational Guided Model Predictive Path Integral Control
+        // Uses SVGD to guide sampling distribution for better exploration
         class SOCFollower : public MPPIFollower {
           public:
             using Base = MPPIFollower;
@@ -21,8 +19,9 @@ namespace drivekit {
                 double dt = 0.1;
 
                 // Sampling settings
-                size_t guide_samples = 64; // guide particle count
+                size_t guide_samples = 64; // guide particle count for SVGD
                 size_t num_samples = 512;  // final MPPI sample count
+                size_t grad_samples = 32;  // samples for gradient estimation
 
                 // Temperatures
                 double temperature = 1.0;       // for MPPI weighting
@@ -35,32 +34,55 @@ namespace drivekit {
                 double min_steer_variance = 1e-4;
                 double max_steer_variance = 1.0;
 
-                // Cost weights (mirrors MPPI/MPC as much as possible)
-                double weight_cte = 100.0;        // Cross-track error
-                double weight_epsi = 100.0;       // Heading error
-                double weight_vel = 1.0;          // Velocity tracking
-                double weight_steering = 10.0;    // Steering effort
-                double weight_acceleration = 5.0; // Acceleration effort
+                // Cost weights
+                double weight_cte = 100.0;
+                double weight_epsi = 100.0;
+                double weight_vel = 1.0;
+                double weight_steering = 10.0;
+                double weight_acceleration = 5.0;
 
-                // Reference velocity along the path
-                double ref_velocity = 1.0; // m/s
+                // Reference velocity
+                double ref_velocity = 1.0;
 
-                // Guide update
-                size_t guide_iterations = 2;
-                double guide_step_size = 0.2; // simple gradient-descent step
+                // SVGD parameters
+                size_t svgd_iterations = 3;    // number of SVGD update steps
+                double svgd_step_size = 0.1;   // SVGD gradient descent step
+                double kernel_bandwidth = 1.0; // RBF kernel bandwidth
 
-                // Reserved for future parallelization
+                // Covariance adaptation
+                bool use_covariance_adaptation = true;
+                double gaussian_fitting_lambda = 0.1;
+
                 size_t num_threads = 4;
             };
 
             SOCFollower();
             explicit SOCFollower(const SOCConfig &soc_config);
 
+            VelocityCommand compute_control(const RobotState &current_state, const Goal &goal,
+                                            const RobotConstraints &constraints, double dt,
+                                            const WorldConstraints *world_constraints = nullptr) override;
+
             std::string get_type() const override;
 
-            // Configuration
             void set_soc_config(const SOCConfig &config);
             SOCConfig get_soc_config() const;
+
+          private:
+            SOCConfig soc_config_;
+
+            // Guide particles for SVGD
+            std::vector<std::vector<double>> guide_steering_;
+            std::vector<std::vector<double>> guide_acceleration_;
+
+            // Helper methods for SVG-MPPI
+            double rbf_kernel(const std::vector<double> &x1, const std::vector<double> &x2, double bandwidth) const;
+            std::vector<double> compute_svgd_gradient(size_t particle_idx,
+                                                      const std::vector<std::vector<double>> &particles,
+                                                      const std::vector<double> &costs, double bandwidth) const;
+            double estimate_gradient_log_likelihood(size_t particle_idx, size_t time_idx, size_t control_idx,
+                                                    const RobotState &current_state, const Goal &goal,
+                                                    const RobotConstraints &constraints) const;
         };
 
     } // namespace pred
