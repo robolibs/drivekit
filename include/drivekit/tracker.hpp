@@ -49,7 +49,7 @@ namespace drivekit {
     };
 
     // Controller types for tracking
-    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT, LQR, MPC, MPC_TRAILER, MPPI, SOC };
+    enum class TrackerType { PID, PURE_PURSUIT, STANLEY, CARROT, LQR, MPC, MPC_TRAILER, MPPI, SOC, MCA };
 
     // ============================================================================
     // Tracker - High-level path/point tracking controller

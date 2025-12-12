@@ -86,6 +86,13 @@ namespace drivekit {
                 // Risk threshold
                 double risk_threshold = 0.05; // σ - Maximum allowable collision probability
 
+                // Velocity scaling based on risk
+                double min_velocity_scale = 0.1; // Minimum velocity scale when max risk
+                double risk_slowdown_gain = 5.0; // How aggressively to slow down with risk
+
+                // Safety margin added to robot radius for collision checking
+                double robot_radius_margin = 0.5; // Extra margin in meters
+
                 // Reference velocity along the path
                 double ref_velocity = 1.0; // m/s
 

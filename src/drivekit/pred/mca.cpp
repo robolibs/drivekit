@@ -461,9 +461,10 @@ namespace drivekit {
             }
 
             // Compute collision probabilities for each timestep
-            // Estimate robot radius from constraints
+            // Estimate robot radius from constraints (use larger dimension for safety)
             double robot_radius = std::max(constraints.robot_width, constraints.robot_length) / 2.0;
-            if (robot_radius < 0.1) robot_radius = 0.5; // Default fallback
+            if (robot_radius < 0.1) robot_radius = 0.5;      // Default fallback
+            robot_radius += mca_config_.robot_radius_margin; // Add safety margin
 
             for (size_t t = 0; t < N; ++t) {
                 std::vector<double> collision_probs =
@@ -535,6 +536,21 @@ namespace drivekit {
             double steering_or_omega = mean_steering.empty() ? 0.0 : mean_steering.front();
             double acceleration = mean_acceleration.empty() ? 0.0 : mean_acceleration.front();
 
+            // Compute maximum collision probability across all samples at first few timesteps
+            double max_collision_prob = 0.0;
+            for (size_t k = 0; k < K; ++k) {
+                // Check first 5 timesteps (immediate future)
+                for (size_t t = 0; t < std::min(size_t(5), N); ++t) {
+                    max_collision_prob = std::max(max_collision_prob, sample_collision_probs_[k][t]);
+                }
+            }
+
+            // Compute velocity scale based on risk (slow down when uncertain)
+            // Scale goes from 1.0 (no risk) to min_velocity_scale (max risk)
+            double risk_factor = std::min(1.0, max_collision_prob * mca_config_.risk_slowdown_gain);
+            double velocity_scale = 1.0 - risk_factor * (1.0 - mca_config_.min_velocity_scale);
+            velocity_scale = std::clamp(velocity_scale, mca_config_.min_velocity_scale, 1.0);
+
             // Update status
             status_.distance_to_goal = current_state.pose.point.distance_to(goal.target_pose.point);
             status_.goal_reached = false;
@@ -542,8 +558,8 @@ namespace drivekit {
             status_.cross_track_error = std::abs(cte);
             status_.heading_error = std::abs(epsi);
 
-            // Convert to velocity commands
-            double target_velocity = ref_velocity + acceleration * dt_internal;
+            // Convert to velocity commands with risk-based scaling
+            double target_velocity = (ref_velocity + acceleration * dt_internal) * velocity_scale;
             double min_vel = constraints.min_linear_velocity;
             if (!config_.allow_reverse) {
                 min_vel = 0.0;
