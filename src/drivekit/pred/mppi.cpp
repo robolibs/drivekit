@@ -428,8 +428,20 @@ namespace drivekit {
                 }
                 ref.yaw.push_back(yaw);
 
-                // Use reference velocity for all points (can be extended with path_.speeds)
-                ref.velocity.push_back(mppi_config_.ref_velocity);
+                // Calculate velocity profile: decelerate when approaching end of path
+                double ref_vel = mppi_config_.ref_velocity;
+                // Calculate distance from this reference point to the end of path
+                double dist_to_end = 0.0;
+                for (size_t j = target_idx; j < path_.drivekits.size() - 1; ++j) {
+                    dist_to_end += path_.drivekits[j].point.distance_to(path_.drivekits[j + 1].point);
+                }
+                // Deceleration zone: slow down within 2m of the end
+                const double decel_distance = 2.0;
+                if (dist_to_end < decel_distance) {
+                    ref_vel = mppi_config_.ref_velocity * (dist_to_end / decel_distance);
+                    ref_vel = std::max(ref_vel, 0.0); // Ensure non-negative
+                }
+                ref.velocity.push_back(ref_vel);
             }
 
             return ref;

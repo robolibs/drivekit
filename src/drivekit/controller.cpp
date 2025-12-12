@@ -18,14 +18,16 @@ namespace drivekit {
         return normalize_angle(desired_heading - current.angle.yaw);
     }
 
-    bool Controller::is_goal_reached(const Pose &current, const Pose &goal) {
+    bool Controller::is_goal_reached(const Pose &current, const Pose &goal, double tolerance) {
         double dist = calculate_distance(current.point, goal.point);
         double angle_diff = std::abs(normalize_angle(goal.angle.yaw - current.angle.yaw));
 
         status_.distance_to_goal = dist;
         status_.heading_error = angle_diff;
 
-        return dist < config_.goal_tolerance && angle_diff < config_.angular_tolerance;
+        // Use provided tolerance if positive, otherwise use config default
+        double pos_tol = (tolerance > 0.0) ? tolerance : config_.goal_tolerance;
+        return dist < pos_tol && angle_diff < config_.angular_tolerance;
     }
 
 } // namespace drivekit

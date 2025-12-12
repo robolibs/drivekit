@@ -80,7 +80,7 @@ namespace drivekit {
             // Predicted trajectory from the best sample (for visualization/debugging)
             const std::vector<Point> &get_predicted_trajectory() const { return predicted_trajectory_; }
 
-          private:
+          protected:
             MPPIConfig mppi_config_;
 
             // Random number generator for sampling
