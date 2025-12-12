@@ -120,8 +120,12 @@ namespace drivekit {
             bool is_diff_drive = (constraints.steering_type == SteeringType::DIFFERENTIAL ||
                                   constraints.steering_type == SteeringType::SKID_STEER);
 
-            // Goal reached check
-            if (is_goal_reached(current_state.pose, goal.target_pose)) {
+            // Calculate path error to update path_index_ for visualization
+            PathError error = calculate_path_error(current_state);
+            (void)error; // Used for path index update
+
+            // Goal reached check (use goal's tolerance if specified)
+            if (is_goal_reached(current_state.pose, goal.target_pose, goal.tolerance_position)) {
                 cmd.valid = true;
                 cmd.status_message = "Goal reached";
                 status_.goal_reached = true;
@@ -503,8 +507,21 @@ namespace drivekit {
                 accel_cmd += w * final_accel[k][0];
             }
 
+            // Calculate distance to end of path for deceleration
+            double dist_to_end = 0.0;
+            for (size_t j = path_index_; j < path_.drivekits.size() - 1; ++j) {
+                dist_to_end += path_.drivekits[j].point.distance_to(path_.drivekits[j + 1].point);
+            }
+            // Deceleration zone: slow down within 2m of the end
+            const double decel_distance = 2.0;
+            double effective_ref_velocity = active_config.ref_velocity;
+            if (dist_to_end < decel_distance) {
+                effective_ref_velocity = active_config.ref_velocity * (dist_to_end / decel_distance);
+                effective_ref_velocity = std::max(effective_ref_velocity, 0.0);
+            }
+
             // Convert to velocity command
-            double target_velocity = active_config.ref_velocity + accel_cmd * dt_internal;
+            double target_velocity = effective_ref_velocity + accel_cmd * dt_internal;
             double min_vel = constraints.min_linear_velocity;
             if (!config_.allow_reverse) {
                 min_vel = 0.0;

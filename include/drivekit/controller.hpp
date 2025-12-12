@@ -57,7 +57,7 @@ namespace drivekit {
 
         double calculate_heading_error(const Pose &current, const Point &target);
 
-        bool is_goal_reached(const Pose &current, const Pose &goal);
+        bool is_goal_reached(const Pose &current, const Pose &goal, double tolerance = -1.0);
     };
 
 } // namespace drivekit
