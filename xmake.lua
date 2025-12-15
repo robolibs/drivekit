@@ -1,5 +1,5 @@
 set_project("drivekit")
-set_version("0.2.0")
+set_version("0.2.1")
 set_xmakever("2.7.0")
 
 -- Set C++ standard
