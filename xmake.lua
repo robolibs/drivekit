@@ -1,5 +1,5 @@
 set_project("drivekit")
-set_version("0.1.6")
+set_version("0.2.0")
 set_xmakever("2.7.0")
 
 -- Set C++ standard
@@ -37,7 +37,7 @@ if pkg_config then
             local lib_dir = path.directory(pkgconfig_path)  -- .../lib
             local prefix_dir = path.directory(lib_dir)      -- .../
             local include_dir = path.join(prefix_dir, "include")
-            
+
             if os.isdir(lib_dir) then
                 add_linkdirs(lib_dir)
             end
@@ -78,7 +78,7 @@ package("concord")
         if not os.isdir(sourcedir) then
             print("Fetching concord from git...")
             os.mkdir(path.directory(sourcedir))
-            os.execv("git", {"clone", "--quiet", "--depth", "1", "--branch", "2.0.2", 
+            os.execv("git", {"clone", "--quiet", "--depth", "1", "--branch", "2.5.0", 
                             "-c", "advice.detachedHead=false",
                             "https://github.com/robolibs/concord.git", sourcedir})
         end
@@ -114,6 +114,30 @@ package("bonsai")
         import("package.tools.cmake").install(package, configs)
     end)
 package_end()
+
+-- -- Define concord package (from git)
+-- package("rerun_sdk")
+--     add_deps("cmake")
+--     set_sourcedir(path.join(os.projectdir(), "build/_deps/rerun_sdk-src"))
+--
+--     on_fetch(function (package)
+--         -- Clone git repository if not exists
+--         local sourcedir = package:sourcedir()
+--         if not os.isdir(sourcedir) then
+--             print("Fetching rerun_sdk from git...")
+--             os.mkdir(path.directory(sourcedir))
+--             os.execv("git", {"clone", "--quiet", "--depth", "1", "--branch", "0.27.3", 
+--                             "-c", "advice.detachedHead=false",
+--                             "https://github.com/rerun-io/rerun.git", sourcedir})
+--         end
+--     end)
+--
+--     on_install(function (package)
+--         local configs = {}
+--         table.insert(configs, "-DCMAKE_BUILD_TYPE=" .. (package:is_debug() and "Debug" or "Release"))
+--         import("package.tools.cmake").install(package, configs)
+--     end)
+-- package_end()
 
 -- Define rerun_sdk package (from ~/.local installation)
 package("rerun_sdk")
