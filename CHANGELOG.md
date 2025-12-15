@@ -2,6 +2,16 @@
 
 ## [0.2.1] - 2025-12-15
 
+### <!-- 1 -->🐛 Bug Fixes
+
+- Revert project version and correct Git tag typo
+
+### <!-- 7 -->⚙️ Miscellaneous Tasks
+
+- `compat: Update concord to 2.5.0`
+
+## [0.2.1] - 2025-12-15
+
 ### <!-- 7 -->⚙️ Miscellaneous Tasks
 
 - `compat: Update concord to 2.5.0`
