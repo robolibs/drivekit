@@ -27,7 +27,7 @@ include(FetchContent)
 # --------------------------------------------------------------------------------------------------
 set(ext_deps)
 
-FetchContent_Declare(concord GIT_REPOSITORY https://github.com/robolibs/concord.git GIT_TAG 2.0.2)
+FetchContent_Declare(concord GIT_REPOSITORY https://github.com/robolibs/concord.git GIT_TAG 2.5.o)
 FetchContent_MakeAvailable(concord)
 list(APPEND ext_deps concord::concord)
 
