@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.2.0] - 2025-12-15
+
+### <!-- 0 -->⛰️  Features
+
+- Refactor motion planning for improved path following
+- Implement and integrate the MCA controller with risk-based scaling
+- Feat: Enable turn-first behavior for differential drive robots
+- Refactor SOCFollower for improved obstacle avoidance and control
+- Introduce Monte Carlo Approximation (MCA) controller
+- Refactor turn-first logic with hysteresis for MPC/MPPI controllers
+- Implement turn-first velocity suppression in MPC and MPPI
+- Implement in-place rotation for differential robots
+- Add support for custom build paths
+- Rename project from navcon to waypoint
+- Support differential drive steering types
+- Introduce Stochastic Optimal Control (SOC) follower
+- MPC and LQR to remove external solver dependencies
+- Add MPPI controller and refactor existing trackers
+- Implement articulated vehicle MPC controller
+- Implement a barebone fuzzy logic
+- Introduce other predictive control algorithms
+- Refine MPC for enhanced path tracking and stability
+- Implement Ackermann steering with rate limits
+- Refactor and enhance path-based controller configurations
+- Feat: Add LQR and MPC controllers for path tracking
+- Add Model Predictive Control (MPC) for path tracking
+- Implement LQR path following controller
+- Feat: Add dynamic world constraints to control system
+- Introduce planning and tracking modules
+- Allow reverse maneuvers in tight turns
+- Refactor controllers and introduce example suite
+- Refactor controllers and integrate Stanley for path tracking
+- Add pure pursuit controller and S-path example
+
+### <!-- 2 -->🚜 Refactor
+
+- Migrate from spdlog to iostream for logging
+- Rename project from Waypoint to DriveKit
+- Rename project from `navcon` to `waypoint`
+- Refactor: Remove LQR and MPC conditional compilation and dependencies
+- Isolate and generalize control and tracking components
+- Refactor pure pursuit and Stanley controller for improved control
+- Refactor to move `allow_reverse` to `RobotState`
+- Refactor Pure Pursuit controller for enhanced accuracy
+- Refactor navigation to planning and tracking subsystems
+- Rename `controller` and `visualization` to `tracking`
+- Rework recording stream initialization and Rerun integration
+- Extract class method implementations to source files
+- Refactor pure pursuit for improved lookahead calculation
+
+### <!-- 7 -->⚙️ Miscellaneous Tasks
+
+- Refactor build system to use modern CMake and FetchContent
+- Remove unused build flags and dependencies
+
+### Build
+
+- Improve xmake project detection and cleanup
+- Migrate build system to xmake in addition to cmake
+- Integrate Rerun SDK conditionally and fix build issues
+
 ## [0.1.6] - 2025-11-01
 
 ### <!-- 2 -->🚜 Refactor
