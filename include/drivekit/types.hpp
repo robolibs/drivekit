@@ -1,6 +1,6 @@
 #pragma once
 
-#include "concord/concord.hpp"
+#include "datapod/spatial.hpp"
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -8,11 +8,12 @@
 
 namespace drivekit {
 
-    // Use Concord types directly
-    using Pose = concord::Pose;
-    using Point = concord::Point;
-    using Size = concord::Size;
-    using Euler = concord::Euler;
+    // Use Datapod types directly
+    using Pose = datapod::Pose;
+    using Point = datapod::Point;
+    using Size = datapod::Size;
+    using Euler = datapod::Euler;
+    using Quaternion = datapod::Quaternion;
 
     // Steering type
     enum class SteeringType {

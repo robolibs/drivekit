@@ -185,7 +185,7 @@ namespace drivekit {
             for (size_t k = 0; k < K_guide; ++k) {
                 double x = current_state.pose.point.x;
                 double y = current_state.pose.point.y;
-                double yaw = current_state.pose.angle.yaw;
+                double yaw = current_state.pose.rotation.to_euler().yaw;
                 double v = current_state.velocity.linear;
                 double cost = 0.0;
 
@@ -286,7 +286,7 @@ namespace drivekit {
                 for (size_t k = 0; k < K_guide; ++k) {
                     double x = current_state.pose.point.x;
                     double y = current_state.pose.point.y;
-                    double yaw = current_state.pose.angle.yaw;
+                    double yaw = current_state.pose.rotation.to_euler().yaw;
                     double v = current_state.velocity.linear;
                     double cost = 0.0;
 
@@ -398,7 +398,7 @@ namespace drivekit {
             for (size_t k = 0; k < K_final; ++k) {
                 double x = current_state.pose.point.x;
                 double y = current_state.pose.point.y;
-                double yaw = current_state.pose.angle.yaw;
+                double yaw = current_state.pose.rotation.to_euler().yaw;
                 double v = current_state.velocity.linear;
                 double cost = 0.0;
 

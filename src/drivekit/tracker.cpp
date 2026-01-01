@@ -6,11 +6,11 @@
 namespace drivekit {
 
     // NavigationGoal constructor
-    NavigationGoal::NavigationGoal(concord::Point t, float tol, float speed)
+    NavigationGoal::NavigationGoal(datapod::Point t, float tol, float speed)
         : target(t), tolerance(tol), max_speed(speed) {}
 
     // PathGoal constructor
-    PathGoal::PathGoal(std::vector<concord::Point> wp, float tol, float speed, bool l)
+    PathGoal::PathGoal(std::vector<datapod::Point> wp, float tol, float speed, bool l)
         : drivekits(std::move(wp)), tolerance(tol), max_speed(speed), loop(l) {}
 
     // Tracker constructor
@@ -52,7 +52,7 @@ namespace drivekit {
         for (const auto &drivekit : path.drivekits) {
             Pose wp;
             wp.point = drivekit;
-            wp.angle = concord::Euler{0.0f, 0.0f, 0.0f}; // No specific heading required
+            wp.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0); // No specific heading required
             drivekit_path.drivekits.push_back(wp);
         }
         drivekit_path.is_closed = path.loop; // Set loop behavior
@@ -128,7 +128,8 @@ namespace drivekit {
             // Pure Pursuit, Stanley, LQR, MPC (including trailer variant), MPPI, SOC, and MCA use the path, but need
             // goal set to END of path for goal-reached check
             if (current_path.has_value() && !current_path->drivekits.empty()) {
-                goal.target_pose = concord::Pose{current_path->drivekits.back(), concord::Euler{0.0f, 0.0f, 0.0f}};
+                goal.target_pose =
+                    datapod::Pose{current_path->drivekits.back(), datapod::Quaternion::from_euler(0.0, 0.0, 0.0)};
                 goal.tolerance_position = current_path->tolerance;
             }
         }
@@ -205,13 +206,13 @@ namespace drivekit {
         return std::numeric_limits<float>::infinity();
     }
 
-    concord::Point Tracker::get_current_target() const {
+    datapod::Point Tracker::get_current_target() const {
         if (current_goal.has_value()) {
             return current_goal->target;
         } else if (current_path.has_value() && current_drivekit_index < current_path->drivekits.size()) {
             return current_path->drivekits[current_drivekit_index];
         }
-        return concord::Point{0, 0};
+        return datapod::Point{0, 0};
     }
 
     // Emergency stop
@@ -227,7 +228,7 @@ namespace drivekit {
         }
 
         float interval_m = interval_cm / 100.0f; // Convert cm to meters
-        std::vector<concord::Point> smoothed_drivekits;
+        std::vector<datapod::Point> smoothed_drivekits;
 
         // Always keep the first drivekit
         smoothed_drivekits.push_back(current_path->drivekits[0]);
@@ -247,7 +248,7 @@ namespace drivekit {
             // Add interpolated points (skip the first one as it's already added)
             for (int j = 1; j < num_segments; ++j) {
                 float t = static_cast<float>(j) / num_segments;
-                concord::Point interpolated;
+                datapod::Point interpolated;
                 interpolated.x = start.x + t * dx;
                 interpolated.y = start.y + t * dy;
                 smoothed_drivekits.push_back(interpolated);
@@ -269,7 +270,7 @@ namespace drivekit {
         for (const auto &drivekit : current_path->drivekits) {
             Pose wp;
             wp.point = drivekit;
-            wp.angle = concord::Euler{0.0f, 0.0f, 0.0f};
+            wp.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
             drivekit_path.drivekits.push_back(wp);
         }
         drivekit_path.is_closed = current_path->loop;
@@ -384,11 +385,11 @@ namespace drivekit {
         Goal goal;
 
         if (current_goal.has_value()) {
-            goal.target_pose = concord::Pose{current_goal->target, concord::Euler{0.0f, 0.0f, 0.0f}};
+            goal.target_pose = datapod::Pose{current_goal->target, datapod::Quaternion::from_euler(0.0, 0.0, 0.0)};
             goal.tolerance_position = current_goal->tolerance;
         } else if (current_path.has_value() && current_drivekit_index < current_path->drivekits.size()) {
-            goal.target_pose =
-                concord::Pose{current_path->drivekits[current_drivekit_index], concord::Euler{0.0f, 0.0f, 0.0f}};
+            goal.target_pose = datapod::Pose{current_path->drivekits[current_drivekit_index],
+                                             datapod::Quaternion::from_euler(0.0, 0.0, 0.0)};
             goal.tolerance_position = current_path->tolerance;
         }
 
@@ -401,8 +402,8 @@ namespace drivekit {
         }
 
         // Calculate distance directly using current state
-        const concord::Point &robot_pos = current_state.pose.point;
-        const concord::Point &current_target = current_path->drivekits[current_drivekit_index];
+        const datapod::Point &robot_pos = current_state.pose.point;
+        const datapod::Point &current_target = current_path->drivekits[current_drivekit_index];
         float distance =
             std::sqrt(std::pow(current_target.x - robot_pos.x, 2) + std::pow(current_target.y - robot_pos.y, 2));
 
@@ -537,8 +538,8 @@ namespace drivekit {
     void Tracker::update_goal_status(const RobotState &current_state) {
         // Check goal completion
         if (current_goal.has_value()) {
-            const concord::Point &robot_pos = current_state.pose.point;
-            const concord::Point &target = current_goal->target;
+            const datapod::Point &robot_pos = current_state.pose.point;
+            const datapod::Point &target = current_goal->target;
             float distance = std::sqrt(std::pow(target.x - robot_pos.x, 2) + std::pow(target.y - robot_pos.y, 2));
             goal_reached = distance <= current_goal->tolerance;
         }

@@ -409,7 +409,7 @@ namespace drivekit {
                 result.path_heading =
                     std::atan2(next_point.y - result.nearest_point.y, next_point.x - result.nearest_point.x);
             } else {
-                result.path_heading = path_.drivekits[nearest_idx].angle.yaw;
+                result.path_heading = path_.drivekits[nearest_idx].rotation.to_euler().yaw;
             }
 
             // Calculate lateral error (cross-track error)
@@ -420,7 +420,7 @@ namespace drivekit {
             result.lateral_error = -dx * std::sin(result.path_heading) + dy * std::cos(result.path_heading);
 
             // Calculate heading error
-            result.heading_error = normalize_angle(current_state.pose.angle.yaw - result.path_heading);
+            result.heading_error = normalize_angle(current_state.pose.rotation.to_euler().yaw - result.path_heading);
 
             // Estimate path curvature
             if (nearest_idx > 0 && nearest_idx < path_.drivekits.size() - 1) {
