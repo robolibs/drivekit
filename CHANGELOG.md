@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.2] - 2026-01-01
+
+### <!-- 0 -->⛰️  Features
+
+- Simplify core and prediction controller implementations
+
+### <!-- 2 -->🚜 Refactor
+
+- Standardize dependencies and build configuration
+
 ## [0.2.1] - 2025-12-15
 
 ### <!-- 1 -->🐛 Bug Fixes
