@@ -17,7 +17,7 @@ namespace {
             pose.point.x = x;
             pose.point.y = 0.0;
             pose.point.z = 0.0;
-            pose.angle.yaw = 0.0;
+            pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
             path.drivekits.push_back(pose);
         }
         return path;
@@ -129,14 +129,14 @@ int main() {
 
     // Initial state
     drivekit::RobotState robot_state;
-    robot_state.pose.point = concord::Point{0.0, 0.0, 0.0};
-    robot_state.pose.angle.yaw = 0.0;
+    robot_state.pose.point = datapod::Point{0.0, 0.0, 0.0};
+    robot_state.pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
     robot_state.velocity.linear = 0.0;
     robot_state.velocity.angular = 0.0;
 
     drivekit::Goal goal;
     goal.target_pose.point = path.drivekits.back().point;
-    goal.target_pose.angle.yaw = 0.0;
+    goal.target_pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
     goal.tolerance_position = 0.5;
 
     float dt = 0.1f;
@@ -273,9 +273,12 @@ int main() {
             robot_state.velocity.linear = cmd.linear_velocity * constraints.max_linear_velocity;
             robot_state.velocity.angular = cmd.angular_velocity * constraints.max_angular_velocity;
 
-            robot_state.pose.point.x += robot_state.velocity.linear * std::cos(robot_state.pose.angle.yaw) * dt;
-            robot_state.pose.point.y += robot_state.velocity.linear * std::sin(robot_state.pose.angle.yaw) * dt;
-            robot_state.pose.angle.yaw += robot_state.velocity.angular * dt;
+            robot_state.pose.point.x +=
+                robot_state.velocity.linear * std::cos(robot_state.pose.rotation.to_euler().yaw) * dt;
+            robot_state.pose.point.y +=
+                robot_state.velocity.linear * std::sin(robot_state.pose.rotation.to_euler().yaw) * dt;
+            robot_state.pose.rotation = datapod::Quaternion::from_euler(
+                0.0, 0.0, robot_state.pose.rotation.to_euler().yaw + robot_state.velocity.angular * dt);
 
             current_time += dt;
 

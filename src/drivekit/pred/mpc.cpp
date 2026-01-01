@@ -237,7 +237,7 @@ namespace drivekit {
 
                 double x = initial_state_.pose.point.x;
                 double y = initial_state_.pose.point.y;
-                double yaw = initial_state_.pose.angle.yaw;
+                double yaw = initial_state_.pose.rotation.to_euler().yaw;
                 double v = initial_state_.velocity.linear;
 
                 if (out_x && out_y) {
@@ -527,14 +527,14 @@ namespace drivekit {
                 result.path_heading =
                     std::atan2(next_point.y - result.nearest_point.y, next_point.x - result.nearest_point.x);
             } else {
-                result.path_heading = path_.drivekits[nearest_idx].angle.yaw;
+                result.path_heading = path_.drivekits[nearest_idx].rotation.to_euler().yaw;
             }
 
             double dx = current_state.pose.point.x - result.nearest_point.x;
             double dy = current_state.pose.point.y - result.nearest_point.y;
             result.cte = -dx * std::sin(result.path_heading) + dy * std::cos(result.path_heading);
 
-            result.epsi = normalize_angle(current_state.pose.angle.yaw - result.path_heading);
+            result.epsi = normalize_angle(current_state.pose.rotation.to_euler().yaw - result.path_heading);
 
             path_index_ = nearest_idx;
 
@@ -575,7 +575,7 @@ namespace drivekit {
                     Point curr = path_.drivekits[target_idx].point;
                     yaw = std::atan2(next.y - curr.y, next.x - curr.x);
                 } else {
-                    yaw = path_.drivekits[target_idx].angle.yaw;
+                    yaw = path_.drivekits[target_idx].rotation.to_euler().yaw;
                 }
                 ref.yaw.push_back(yaw);
 

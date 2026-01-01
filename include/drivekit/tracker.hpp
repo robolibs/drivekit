@@ -1,6 +1,6 @@
 #pragma once
 
-#include "concord/concord.hpp"
+#include "datapod/spatial.hpp"
 #include "drivekit/controller.hpp"
 #include "drivekit/path/lqr.hpp"
 #include "drivekit/path/pure_pursuit.hpp"
@@ -32,20 +32,20 @@ namespace drivekit {
 
     // Goal types for tracking
     struct NavigationGoal {
-        concord::Point target;
+        datapod::Point target;
         float tolerance = 1.0f; // meters
         float max_speed = 1.0f; // m/s
 
-        NavigationGoal(concord::Point t, float tol = 1.0f, float speed = 1.0f);
+        NavigationGoal(datapod::Point t, float tol = 1.0f, float speed = 1.0f);
     };
 
     struct PathGoal {
-        std::vector<concord::Point> drivekits;
+        std::vector<datapod::Point> drivekits;
         float tolerance = 1.0f; // meters
         float max_speed = 1.0f; // m/s
         bool loop = false;      // whether to loop back to start
 
-        PathGoal(std::vector<concord::Point> wp, float tol = 1.0f, float speed = 1.0f, bool l = false);
+        PathGoal(std::vector<datapod::Point> wp, float tol = 1.0f, float speed = 1.0f, bool l = false);
     };
 
     // Controller types for tracking
@@ -138,7 +138,7 @@ namespace drivekit {
         // Status information
         float get_distance_to_goal() const;
         float get_distance_to_current_drivekit() const;
-        concord::Point get_current_target() const;
+        datapod::Point get_current_target() const;
 
         // Emergency stop
         void emergency_stop();

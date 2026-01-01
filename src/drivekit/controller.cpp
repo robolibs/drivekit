@@ -15,12 +15,12 @@ namespace drivekit {
         double dx = target.x - current.point.x;
         double dy = target.y - current.point.y;
         double desired_heading = std::atan2(dy, dx);
-        return normalize_angle(desired_heading - current.angle.yaw);
+        return normalize_angle(desired_heading - current.rotation.to_euler().yaw);
     }
 
     bool Controller::is_goal_reached(const Pose &current, const Pose &goal, double tolerance) {
         double dist = calculate_distance(current.point, goal.point);
-        double angle_diff = std::abs(normalize_angle(goal.angle.yaw - current.angle.yaw));
+        double angle_diff = std::abs(normalize_angle(goal.rotation.to_euler().yaw - current.rotation.to_euler().yaw));
 
         status_.distance_to_goal = dist;
         status_.heading_error = angle_diff;

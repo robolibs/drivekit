@@ -8,7 +8,7 @@
 #include <thread>
 
 namespace {
-    std::vector<concord::Point> build_s_shape_path() {
+    std::vector<datapod::Point> build_s_shape_path() {
         return {{0.0, 0.0},   {2.0, 0.0},   {4.0, 0.5},   {6.0, 1.5},   {8.0, 3.0},   {10.0, 5.0},
                 {12.0, 7.5},  {14.0, 10.0}, {16.0, 12.0}, {18.0, 13.5}, {20.0, 14.5}, {22.0, 15.0},
                 {24.0, 15.0}, {26.0, 15.0}, {28.0, 15.0}, {30.0, 15.0}, {32.0, 15.0}, {34.0, 15.0},
@@ -49,8 +49,8 @@ int main() {
     navigator.smoothen(25.0f); // Match smoothing cadence from navi example
 
     drivekit::RobotState robot_state;
-    robot_state.pose.point = concord::Point{0.0, 0.0};
-    robot_state.pose.angle.yaw = 0.0;
+    robot_state.pose.point = datapod::Point{0.0, 0.0};
+    robot_state.pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
 
     float dt = 0.1f;
     float print_interval = 0.5f;
@@ -64,9 +64,10 @@ int main() {
             robot_state.velocity.linear = cmd.linear_velocity;
             robot_state.velocity.angular = cmd.angular_velocity;
 
-            robot_state.pose.point.x += cmd.linear_velocity * std::cos(robot_state.pose.angle.yaw) * dt;
-            robot_state.pose.point.y += cmd.linear_velocity * std::sin(robot_state.pose.angle.yaw) * dt;
-            robot_state.pose.angle.yaw += cmd.angular_velocity * dt;
+            robot_state.pose.point.x += cmd.linear_velocity * std::cos(robot_state.pose.rotation.to_euler().yaw) * dt;
+            robot_state.pose.point.y += cmd.linear_velocity * std::sin(robot_state.pose.rotation.to_euler().yaw) * dt;
+            robot_state.pose.rotation = datapod::Quaternion::from_euler(
+                0.0, 0.0, robot_state.pose.rotation.to_euler().yaw + cmd.angular_velocity * dt);
 
             current_time += dt;
 

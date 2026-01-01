@@ -16,8 +16,9 @@ namespace drivekit {
 
             // Calculate rear axle position (reference point for Pure Pursuit)
             // This is more accurate than using the center of the robot
-            double rear_x = current_state.pose.point.x - (wheelbase / 2.0) * std::cos(current_state.pose.angle.yaw);
-            double rear_y = current_state.pose.point.y - (wheelbase / 2.0) * std::sin(current_state.pose.angle.yaw);
+            double yaw = current_state.pose.rotation.to_euler().yaw;
+            double rear_x = current_state.pose.point.x - (wheelbase / 2.0) * std::cos(yaw);
+            double rear_y = current_state.pose.point.y - (wheelbase / 2.0) * std::sin(yaw);
 
             Point rear_axle{rear_x, rear_y};
 
@@ -37,8 +38,7 @@ namespace drivekit {
             double progress_distance = wheelbase * 1.5; // Smaller progress threshold
 
             if (has_path) {
-                auto lookahead_result = find_lookahead_point(rear_axle, current_state.pose.angle.yaw,
-                                                             lookahead_distance, progress_distance);
+                auto lookahead_result = find_lookahead_point(rear_axle, yaw, lookahead_distance, progress_distance);
                 if (!lookahead_result.has_value()) {
                     // Reached end of path, target the goal
                     target_point = goal.target_pose.point;
@@ -65,7 +65,7 @@ namespace drivekit {
             // Calculate angle to target from rear axle (alpha)
             double dx = target_point.x - rear_x;
             double dy = target_point.y - rear_y;
-            double alpha = std::atan2(dy, dx) - current_state.pose.angle.yaw;
+            double alpha = std::atan2(dy, dx) - yaw;
 
             // Normalize alpha to [-pi, pi]
             alpha = normalize_angle(alpha);

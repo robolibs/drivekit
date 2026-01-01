@@ -114,7 +114,7 @@ namespace drivekit {
             for (size_t k = 0; k < K; ++k) {
                 double x = current_state.pose.point.x;
                 double y = current_state.pose.point.y;
-                double yaw = current_state.pose.angle.yaw;
+                double yaw = current_state.pose.rotation.to_euler().yaw;
                 double v = current_state.velocity.linear;
 
                 double sample_cost = 0.0;
@@ -372,7 +372,7 @@ namespace drivekit {
                 result.path_heading =
                     std::atan2(next_point.y - result.nearest_point.y, next_point.x - result.nearest_point.x);
             } else {
-                result.path_heading = path_.drivekits[nearest_idx].angle.yaw;
+                result.path_heading = path_.drivekits[nearest_idx].rotation.to_euler().yaw;
             }
 
             // Cross-track error
@@ -381,7 +381,7 @@ namespace drivekit {
             result.cte = -dx * std::sin(result.path_heading) + dy * std::cos(result.path_heading);
 
             // Heading error
-            result.epsi = normalize_angle(current_state.pose.angle.yaw - result.path_heading);
+            result.epsi = normalize_angle(current_state.pose.rotation.to_euler().yaw - result.path_heading);
 
             // Advance controller path index
             path_index_ = nearest_idx;
@@ -424,7 +424,7 @@ namespace drivekit {
                     Point curr = path_.drivekits[target_idx].point;
                     yaw = std::atan2(next.y - curr.y, next.x - curr.x);
                 } else {
-                    yaw = path_.drivekits[target_idx].angle.yaw;
+                    yaw = path_.drivekits[target_idx].rotation.to_euler().yaw;
                 }
                 ref.yaw.push_back(yaw);
 

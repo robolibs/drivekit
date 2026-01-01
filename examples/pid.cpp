@@ -7,16 +7,16 @@
 #include <vector>
 
 namespace {
-    std::vector<concord::Point> build_pid_drivekits() {
+    std::vector<datapod::Point> build_pid_drivekits() {
         return {{0.0f, 0.0f}, {1.5f, 0.5f}, {3.0f, 1.5f}, {4.5f, 2.0f}, {6.0f, 3.2f}, {7.0f, 3.8f}, {8.0f, 4.0f}};
     }
 
-    drivekit::Path make_visual_path(const std::vector<concord::Point> &points) {
+    drivekit::Path make_visual_path(const std::vector<datapod::Point> &points) {
         drivekit::Path path;
         for (const auto &pt : points) {
             drivekit::Pose pose;
             pose.point = pt;
-            pose.angle = concord::Euler{0.0f, 0.0f, 0.0f};
+            pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
             path.drivekits.push_back(pose);
         }
         return path;
@@ -63,7 +63,7 @@ int main() {
         navigator.set_goal(next_goal);
 
         drivekit::Goal viz_goal;
-        viz_goal.target_pose = concord::Pose{next_goal.target, concord::Euler{0.0f, 0.0f, 0.0f}};
+        viz_goal.target_pose = datapod::Pose{next_goal.target, datapod::Quaternion::from_euler(0.0, 0.0, 0.0)};
         viz_goal.tolerance_position = next_goal.tolerance;
         drivekit::visualize::show_goal(rec, viz_goal, "pid_goal");
     };
@@ -72,8 +72,8 @@ int main() {
     set_navigation_goal(drivekit_index);
 
     drivekit::RobotState robot_state;
-    robot_state.pose.point = concord::Point{0.0, 0.0};
-    robot_state.pose.angle.yaw = 0.0;
+    robot_state.pose.point = datapod::Point{0.0, 0.0};
+    robot_state.pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
 
     float dt = 0.05f;
     float current_time = 0.0f;
@@ -87,9 +87,10 @@ int main() {
             robot_state.velocity.linear = cmd.linear_velocity;
             robot_state.velocity.angular = cmd.angular_velocity;
 
-            robot_state.pose.point.x += cmd.linear_velocity * std::cos(robot_state.pose.angle.yaw) * dt;
-            robot_state.pose.point.y += cmd.linear_velocity * std::sin(robot_state.pose.angle.yaw) * dt;
-            robot_state.pose.angle.yaw += cmd.angular_velocity * dt;
+            robot_state.pose.point.x += cmd.linear_velocity * std::cos(robot_state.pose.rotation.to_euler().yaw) * dt;
+            robot_state.pose.point.y += cmd.linear_velocity * std::sin(robot_state.pose.rotation.to_euler().yaw) * dt;
+            robot_state.pose.rotation = datapod::Quaternion::from_euler(
+                0.0, 0.0, robot_state.pose.rotation.to_euler().yaw + cmd.angular_velocity * dt);
 
             current_time += dt;
 

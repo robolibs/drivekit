@@ -39,7 +39,7 @@ namespace drivekit {
             auto [closest_point, path_heading, cross_track_error] = find_closest_path_point(current_state.pose);
 
             // Calculate heading error
-            double heading_error = normalize_angle(path_heading - current_state.pose.angle.yaw);
+            double heading_error = normalize_angle(path_heading - current_state.pose.rotation.to_euler().yaw);
 
             // Check turn_first mode for diff/skid drive: rotate in place until aligned
             if (is_diff_drive && current_state.turn_first && std::abs(heading_error) > config_.angular_tolerance) {
