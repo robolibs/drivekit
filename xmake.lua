@@ -12,9 +12,9 @@ local LIB_DEPS = {
     {"datapod", "https://github.com/robolibs/datapod.git", "0.0.16"},
     {"optinum", "https://github.com/robolibs/optinum.git", "0.0.13"},
     {"bonsai", "https://github.com/robolibs/bonsai.git", "0.3.0"},
+    {system = "rerun_sdk"},
 }
 local EXAMPLE_DEPS = {
-    {system = "rerun_sdk"},
 }
 local TEST_DEPS = {
     {"doctest", "https://github.com/doctest/doctest.git", "v2.4.11"},
@@ -175,6 +175,9 @@ target(PROJECT_NAME)
     add_installfiles("include/(" .. PROJECT_NAME .. "/**.hpp)")
 
     for _, dep in ipairs(LIB_DEP_NAMES) do add_packages(dep) end
+
+    -- Enable rerun visualization support (rerun_sdk is in LIB_DEPS)
+    add_defines("HAS_RERUN", {public = true})
 
     if has_config("short_namespace") then
         add_defines("SHORT_NAMESPACE", {public = true})

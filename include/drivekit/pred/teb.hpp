@@ -1,11 +1,13 @@
 #pragma once
+
 #include "drivekit/controller.hpp"
 #include <vector>
 
 namespace drivekit {
     namespace pred {
-        // TEB (Timed Elastic Band) - Trajectory optimization with time information
-        // TODO: Full implementation later
+
+        /// TEB (Timed Elastic Band) - Trajectory optimization with time information.
+        /// TODO: Full implementation later.
         class TEBFollower : public Controller {
           public:
             using Base = Controller;
@@ -14,6 +16,7 @@ namespace drivekit {
             using Base::path_index_;
             using Base::status_;
 
+            /// TEB-specific configuration.
             struct TEBConfig {
                 size_t num_poses = 15;
                 double dt_ref = 0.3;
@@ -37,19 +40,27 @@ namespace drivekit {
                 size_t max_number_classes = 3;
             };
 
-            TEBFollower();
-            explicit TEBFollower(const TEBConfig &teb_config);
+            inline TEBFollower() : TEBFollower(TEBConfig{}) {}
 
-            VelocityCommand compute_control(const RobotState &current_state, const Goal &goal,
-                                            const RobotConstraints &constraints, double dt,
-                                            const WorldConstraints *world_constraints = nullptr) override;
+            inline explicit TEBFollower(const TEBConfig &teb_config) : teb_config_(teb_config) {}
 
-            std::string get_type() const override;
-            void set_teb_config(const TEBConfig &config);
-            TEBConfig get_teb_config() const;
+            inline VelocityCommand compute_control(const RobotState &, const Goal &, const RobotConstraints &, double,
+                                                   const WorldConstraints * = nullptr) override {
+                VelocityCommand cmd;
+                cmd.valid = false;
+                cmd.status_message = "TEB not implemented";
+                return cmd;
+            }
+
+            inline std::string get_type() const override { return "teb_follower"; }
+
+            inline void set_teb_config(const TEBConfig &config) { teb_config_ = config; }
+
+            inline TEBConfig get_teb_config() const { return teb_config_; }
 
           private:
             TEBConfig teb_config_;
         };
+
     } // namespace pred
 } // namespace drivekit
