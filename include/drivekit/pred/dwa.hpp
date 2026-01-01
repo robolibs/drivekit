@@ -1,11 +1,13 @@
 #pragma once
+
 #include "drivekit/controller.hpp"
 #include <vector>
 
 namespace drivekit {
     namespace pred {
-        // DWA (Dynamic Window Approach) - Fast reactive local planner
-        // TODO: Full implementation later
+
+        /// DWA (Dynamic Window Approach) - Fast reactive local planner.
+        /// TODO: Full implementation later.
         class DWAFollower : public Controller {
           public:
             using Base = Controller;
@@ -14,6 +16,7 @@ namespace drivekit {
             using Base::path_index_;
             using Base::status_;
 
+            /// DWA-specific configuration.
             struct DWAConfig {
                 double predict_time = 1.0;
                 double dt = 0.1;
@@ -28,19 +31,27 @@ namespace drivekit {
                 double target_velocity = 1.0;
             };
 
-            DWAFollower();
-            explicit DWAFollower(const DWAConfig &dwa_config);
+            inline DWAFollower() : DWAFollower(DWAConfig{}) {}
 
-            VelocityCommand compute_control(const RobotState &current_state, const Goal &goal,
-                                            const RobotConstraints &constraints, double dt,
-                                            const WorldConstraints *world_constraints = nullptr) override;
+            inline explicit DWAFollower(const DWAConfig &dwa_config) : dwa_config_(dwa_config) {}
 
-            std::string get_type() const override;
-            void set_dwa_config(const DWAConfig &config);
-            DWAConfig get_dwa_config() const;
+            inline VelocityCommand compute_control(const RobotState &, const Goal &, const RobotConstraints &, double,
+                                                   const WorldConstraints * = nullptr) override {
+                VelocityCommand cmd;
+                cmd.valid = false;
+                cmd.status_message = "DWA not implemented";
+                return cmd;
+            }
+
+            inline std::string get_type() const override { return "dwa_follower"; }
+
+            inline void set_dwa_config(const DWAConfig &config) { dwa_config_ = config; }
+
+            inline DWAConfig get_dwa_config() const { return dwa_config_; }
 
           private:
             DWAConfig dwa_config_;
         };
+
     } // namespace pred
 } // namespace drivekit
