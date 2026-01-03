@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.3] - 2026-01-03
+
+### <!-- 7 -->⚙️ Miscellaneous Tasks
+
+- Update datapod and optinum dependency versions
+
 ## [0.0.2] - 2026-01-01
 
 ### <!-- 0 -->⛰️  Features
