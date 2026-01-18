@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.6] - 2026-01-18
+
+### <!-- 7 -->⚙️ Miscellaneous Tasks
+
+- Migrate build system to using PROJECT file
+- Update dependency versions
+
 ## [0.0.3] - 2026-01-03
 
 ### <!-- 7 -->⚙️ Miscellaneous Tasks
